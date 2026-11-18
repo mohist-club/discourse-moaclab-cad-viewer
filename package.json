@@ -1,0 +1,14 @@
+{
+  "name": "discourse-moaclab-cad-viewer",
+  "version": "0.6.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/validate.mjs && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9",
+    "sass": "1.92.0",
+    "three": "0.180.0"
+  }
+}

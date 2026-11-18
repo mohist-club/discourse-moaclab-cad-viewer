@@ -1,0 +1,15 @@
+{
+  "name": "Moaclab CAD Viewer",
+  "component": true,
+  "about_url": "https://github.com/mohist-club/discourse-moaclab-cad-viewer",
+  "authors": "Moaclab",
+  "theme_version": "0.6.3",
+  "minimum_discourse_version": "3.0.0",
+  "assets": {},
+  "color_schemes": {},
+  "modifiers": {
+    "svg_icons": [
+      "cube"
+    ]
+  }
+}

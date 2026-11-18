@@ -1,0 +1,8 @@
+show_sidebar_link:
+  default: false
+  type: bool
+  description: "Automatically add 3D Viewer to the Discourse sidebar. Leave disabled when the link is managed in the sidebar menu."
+embed_viewer_base:
+  default: "/viewer"
+  type: string
+  description: "Base URL used when rendering [moaclab-3d] shortcodes inside posts. Use /viewer for plugin-backed persistent CAD model ids."
