@@ -47,9 +47,10 @@ npm test
 
 1. 从 `main` 开分支，一个分支只做一件事。
 2. 同步更新 `about.json` 的 `theme_version` 和 `package.json`（及 `package-lock.json`）的 `version`。
-3. 推分支，开指向 `main` 的 PR，等 Actions 通过。合并由仓库所有者完成，合并后删除分支。
-4. 合并后打 `vX.Y.Z` tag。
-5. 更新到网站按维护仓库的 `ops/release.md` 执行，并在 `components/cad-viewer.md` 的发布记录里追加一行。
+3. 推分支，开指向 `main` 的 PR，等 Actions 通过。合并由仓库所有者决定：所有者在对话里说「合并」，Claude 即可合并。合并后的分支不用手动删除。
+4. 更新到网站按维护仓库的 `ops/release.md` 执行，并在 `components/cad-viewer.md` 的发布记录里追加一行。
+
+不打 `vX.Y.Z` tag：版本以 `about.json` 和维护仓库的发布记录为准（云端会话也推送不了 tag）。
 
 ## 不要做
 
