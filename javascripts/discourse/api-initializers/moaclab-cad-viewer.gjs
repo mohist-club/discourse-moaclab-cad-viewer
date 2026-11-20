@@ -6,6 +6,7 @@ import installDxfPolylines from "../lib/cad-dxf-polylines";
 import { serializeDrawingSvg } from "../lib/cad-svg-snapshot";
 import { installCadFileSnapshot, readUploadResponse, uploadErrorHint } from "../lib/cad-upload-errors";
 import rememberDrawingLibrary, { drawingContext } from "../lib/cad-library-navigation";
+import installLibraryActions, { takePendingLocalFile } from "../lib/cad-library-actions";
 
 export default apiInitializer((api) => {
   const NS = "moaclab-cad-viewer";
@@ -41,6 +42,8 @@ export default apiInitializer((api) => {
     bridge: null,
   };
   rememberDrawingLibrary(api);
+  const enhanceLibrary = installLibraryActions(api, t);
+  const isLibrary = () => window.location.pathname === "/viewer" && !isRoute();
 
   if (themeSettings.show_sidebar_link ?? false) {
     api.addCommunitySectionLink((BaseCommunitySectionLink) => class MoaclabCadViewerSectionLink extends BaseCommunitySectionLink {
@@ -257,6 +260,12 @@ export default apiInitializer((api) => {
     } else if (mount) {
       mount.textContent = message;
     }
+  }
+
+  async function loadInitialFile() {
+    const localFile = takePendingLocalFile();
+    if (localFile) await state.instance.loadFile(localFile);
+    else await loadRouteFile();
   }
 
   async function loadRouteFile() {
@@ -523,7 +532,7 @@ export default apiInitializer((api) => {
         console.warn("Moaclab CAD Viewer preview capture failed; continuing with shortcode only", previewError);
       }
       await openComposerWithShortcode(body, state.currentFile);
-      setShareButtonState(t("postReference", "Post preview"), false);
+      setShareButtonState(t("shareUpload", "Upload & share"), false);
     } catch (error) {
       console.error("Moaclab CAD Viewer composer upload failed", error);
       setShareButtonState(t("uploadFailed", "Upload failed"), false);
@@ -540,17 +549,8 @@ export default apiInitializer((api) => {
     button.type = "button";
     button.className = "mlcv-post";
     button.hidden = true;
-    button.textContent = t("postReference", "Post preview");
+    button.textContent = t("shareUpload", "Upload & share");
     button.addEventListener("click", composeCurrentFile);
-    const shareLabel = document.createElement("label");
-    shareLabel.className = "mlcv-share-choice";
-    const share = document.createElement("input");
-    share.type = "checkbox";
-    share.checked = new URLSearchParams(window.location.search).get("share") === "1";
-    shareLabel.append(share, document.createTextNode(t("shareLibrary", "Share to drawing library")));
-    shareLabel.hidden = true;
-    share.addEventListener("change", () => { button.hidden = !share.checked || !state.currentFile; });
-    headerFile.appendChild(shareLabel);
     headerFile.appendChild(button);
     state.shareButton = button;
 
@@ -558,18 +558,15 @@ export default apiInitializer((api) => {
       setFile(file, remote) {
         state.currentFile = remote ? null : file;
         state.currentFileKey = remote ? "" : `${file.name}:${file.size}:${file.lastModified}`;
-        shareLabel.hidden = remote;
-        button.hidden = remote || !share.checked;
-        setShareButtonState(t("postReference", "Post preview"), false);
+        button.hidden = remote;
+        setShareButtonState(t("shareUpload", "Upload & share"), false);
       },
       clearFile() {
         state.currentFile = null;
         state.currentFileKey = "";
-        shareLabel.hidden = true;
         button.hidden = true;
       },
     };
-
   }
 
   function syncSidebar(active = isRoute()) {
@@ -633,7 +630,7 @@ export default apiInitializer((api) => {
     if (state.failed) return false;
     state.mounting = (async () => {
     let page = document.getElementById(`${NS}-page`);
-    if (page && state.instance) { await loadRouteFile(); return true; }
+    if (page && state.instance) { await loadInitialFile(); return true; }
     if (state.instance) { state.instance.dispose(); state.instance = null; }
     const outlet = document.getElementById("main-outlet");
     if (!outlet || !document.body) return false;
@@ -672,7 +669,7 @@ export default apiInitializer((api) => {
         onFileError: () => state.bridge?.clearFile(),
       });
       installCadFileSnapshot(state.instance, () => state.loadingRouteFile, t, () => state.bridge?.clearFile());
-      await loadRouteFile();
+      await loadInitialFile();
       return true;
     } catch (error) {
       state.failed = true;
@@ -712,7 +709,10 @@ export default apiInitializer((api) => {
       document.body.classList.add(`${NS}-route`);
       document.body.classList.toggle(`${NS}-embed`, isEmbed());
       syncSidebar(true); reconcile();
-    } else { syncSidebar(false); close(); }
+    } else {
+      syncSidebar(false); close();
+      if (isLibrary()) enhanceLibrary();
+    }
   }
 
   window.addEventListener("popstate", syncRoute);
