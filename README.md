@@ -13,11 +13,12 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 
 `/viewer` 不带参数时的图纸列表由插件渲染，组件只改它的外观和入口：
 
+- 数据来源：设置 `library_category_id` 不为 0 时，组件用 `api.modifyClass("component:moaclab-cad-library")` 改写列表的 `load()`，改为取该栏目的全部话题（排除栏目说明帖），搜索走 `/search.json` 并限定栏目；带模型的话题仍从 `/moaclab-cad/drawings.json` 取格式标签（`cad-library-source.js`）。
 - 样式按 Instagram 主题的发现页网格重排，颜色用该主题的 `--ig-*` 变量，其他主题下退回 Discourse 颜色。
 - 隐藏格式筛选和插件的两个头部链接，换成一个「图纸预览」按钮：选择本地文件后直接在查看器里打开（`cad-library-actions.js`）。
 - 查看器里打开本地文件后显示「上传分享」，上传模型并打开带短代码的发帖框。
 
-这些规则依赖插件的类名（`moaclab-cad-library__*`、`#cad-library-format`）。插件改动图纸列表的结构时，要同步检查本组件。
+这些规则依赖插件的组件名 `moaclab-cad-library`、它的 `load()` / `drawings` / `nextBefore` 等字段和类名（`moaclab-cad-library__*`、`#cad-library-format`）。插件改动图纸列表的结构时，要同步检查本组件。
 
 ## 设置
 
@@ -25,6 +26,7 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 | --- | --- | --- |
 | `show_sidebar_link` | `false` | 自动在侧栏添加 3D Viewer。已在后台导航菜单维护链接时保持关闭。 |
 | `embed_viewer_base` | `/viewer` | 渲染 `[moaclab-3d]` 短代码时使用的地址前缀。 |
+| `library_category_id` | `9` | 图纸列表显示这个栏目的全部话题（9 = 资源），搜索也限定在这个栏目。设为 `0` 时恢复插件默认：只显示带模型的话题。 |
 
 ## 生成文件
 

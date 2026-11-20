@@ -6,3 +6,8 @@ embed_viewer_base:
   default: "/viewer"
   type: string
   description: "Base URL used when rendering [moaclab-3d] shortcodes inside posts. Use /viewer for plugin-backed persistent CAD model ids."
+library_category_id:
+  default: 9
+  type: integer
+  min: 0
+  description: "Category whose topics the /viewer drawing library lists (9 = 资源). A search is limited to the same category. 0 keeps the plugin default: only topics that contain a CAD model."
