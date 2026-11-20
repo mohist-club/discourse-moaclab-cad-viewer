@@ -20,7 +20,7 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 
 ## 生成文件
 
-`javascripts/discourse/lib/cad-workbench-geometry.js`（打包后的 three.js 子集）和 `cad-workbench-icons.js`（Lucide 图标，MIT）由早期的 `scripts/build-workbench.cjs` 生成。该脚本不在线上导出中，目前按已生成文件维护；需要重新生成时先补回脚本。
+`javascripts/discourse/lib/cad-workbench-geometry.js`（打包后的 three.js 子集）和 `cad-workbench-icons.js`（Lucide 图标，ISC）由早期的 `scripts/build-workbench.cjs` 生成。该脚本不在线上导出中，目前按已生成文件维护；需要重新生成时先补回脚本。
 
 ## 开发验证
 
@@ -31,6 +31,10 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 ## 发布
 
 走 PR 合并到 `main`，再按 Moaclab 维护仓库的 `ops/release.md` 更新到网站。
+
+## 许可
+
+本仓库代码以 MIT 许可发布，见 `LICENSE`。打包进来的第三方内容见 `THIRD_PARTY_NOTICES.md`。
 
 ## 来源
 
