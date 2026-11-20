@@ -1,9 +1,7 @@
 body.moaclab-cad-viewer-route{overflow:hidden!important}
 .mlcv-library-back{display:inline-flex;align-items:center;min-height:40px;color:var(--primary);font-size:12px;white-space:nowrap;padding:0 8px}
-.mlcv-share-choice{display:flex;align-items:center;gap:6px;min-height:40px;color:var(--primary);font-size:12px;white-space:nowrap;margin:0}
-.mlcv-share-choice[hidden],.mlcv-post[hidden]{display:none!important}
-.mlcv-share-choice input{margin:0}
-@media(max-width:700px){.mlcv-header:has(.mlcv-share-choice:not([hidden])){flex-wrap:wrap;min-height:88px}.mlcv-shell:has(.mlcv-share-choice:not([hidden])){grid-template-rows:88px minmax(0,1fr)}.mlcv-file:has(.mlcv-share-choice:not([hidden])){flex-wrap:wrap;gap:6px}.mlcv-library-back,.mlcv-share-choice{font-size:11px;min-height:40px}}
+.mlcv-post[hidden]{display:none!important}
+@media(max-width:700px){.mlcv-library-back{font-size:11px;min-height:40px}}
 body.moaclab-cad-viewer-embed .d-header-wrap,body.moaclab-cad-viewer-embed .d-header{display:none!important}
 body.moaclab-cad-viewer-route #main-outlet-wrapper{width:100%!important;max-width:none!important}
 body.moaclab-cad-viewer-route #main-outlet{box-sizing:border-box;height:calc(100dvh - var(--header-offset,64px));min-height:0;overflow:hidden;padding:0!important;margin:0!important;width:100%!important;max-width:none!important}
@@ -124,7 +122,6 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
   .mlcv-open > span:first-child { display: inline-flex; }
   .mlcv-open svg, .mlcv-file svg { width: 16px; height: 16px; }
   .mlcv-post { background: var(--mlcv-accent); color: var(--secondary); border-color: var(--mlcv-accent); }
-  .mlcv-share-choice { font-size: 11px; min-height: 30px; }
   .mlcv-stage { grid-row: 2; grid-column: 1; min-width: 0; border-block: 1px solid var(--mlcv-line); background: #f1f3f4; }
   .mlcv-wb-canvas-file { position: absolute; top: 20px; left: 18px; font-size: 10px; line-height: 20px; color: var(--mlcv-muted); max-width: calc(100% - 240px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; z-index: 5; pointer-events: none; }
   .mlcv-viewcube { display: flex; align-items: center; position: absolute; top: 16px; right: 16px; width: auto; height: 31px; padding: 3px; background: color-mix(in srgb, var(--mlcv-panel) 90%, transparent); border-radius: 5px; filter: none; }
@@ -196,7 +193,223 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
   &.mlcv-workbench--embedded .mlcv-shell { grid-template-rows: 0 minmax(0,1fr); }
   @media(max-width:1100px) { padding: 18px 18px 16px; &.mlcv-wb-panel-open .mlcv-shell { grid-template-columns: minmax(0,1fr) 220px; } .mlcv-wb-inspector { padding-inline: 13px; } .mlcv-tool { width: 27px; min-width: 27px; } .mlcv-file { max-width: 320px; } }
   @media(max-width:900px) { .mlcv-shell, &.mlcv-wb-panel-open .mlcv-shell { grid-template-columns: minmax(0,1fr); position: relative; } .mlcv-wb-inspector { grid-column: 1; position: absolute; top: 0; bottom: 0; right: 0; width: 245px; z-index: 15; border-right: 1px solid var(--mlcv-line); box-shadow: -6px 0 20px #00000008; } .mlcv-wb-topic span { display: none; } .mlcv-file { gap: 4px; } }
-  @media(max-width:700px) { padding: 16px 12px 10px; .mlcv-header { gap: 13px 7px; padding-bottom: 17px; } .mlcv-wb-title { font-size: 17px; } .mlcv-wb-meta { font-size: 10px; } .mlcv-wb-breadcrumb { font-size: 11px; } .mlcv-open { width: 30px; min-width: 30px; padding: 0; } .mlcv-open span:not(:first-child) { display: none; } .mlcv-wb-topic { min-width: 30px; padding: 0 5px; } .mlcv-file > .mlcv-wb-button { width: 29px; min-width: 29px; } .mlcv-file { max-width: 170px; } .mlcv-share-choice { font-size: 10px; } .mlcv-post { font-size: 10px; height: 30px; padding: 0 6px; } .mlcv-wb-canvas-file { top: 12px; left: 12px; max-width: calc(100% - 24px); } .mlcv-viewcube { display: flex; top: 44px; right: 12px; } .mlcv-toolbar { max-width: calc(100% - 16px); width: calc(100% - 16px); gap: 0; padding: 4px 2px; justify-content: flex-start; } .mlcv-tool { flex: 1 0 27px; min-width: 27px; width: 27px; height: 33px; } .mlcv-tool svg { width: 16px; height: 16px; } .mlcv-status { left: 12px; font-size: 9px; } .mlcv-measure-label { top: 88px; max-width: calc(100% - 24px); } .mlcv-wb-inspector { width: min(245px,calc(100% - 28px)); } }
+  @media(max-width:700px) { padding: 16px 12px 10px; .mlcv-header { gap: 13px 7px; padding-bottom: 17px; } .mlcv-wb-title { font-size: 17px; } .mlcv-wb-meta { font-size: 10px; } .mlcv-wb-breadcrumb { font-size: 11px; } .mlcv-open { width: 30px; min-width: 30px; padding: 0; } .mlcv-open span:not(:first-child) { display: none; } .mlcv-wb-topic { min-width: 30px; padding: 0 5px; } .mlcv-file > .mlcv-wb-button { width: 29px; min-width: 29px; } .mlcv-file { max-width: 170px; } .mlcv-post { font-size: 10px; height: 30px; padding: 0 6px; } .mlcv-wb-canvas-file { top: 12px; left: 12px; max-width: calc(100% - 24px); } .mlcv-viewcube { display: flex; top: 44px; right: 12px; } .mlcv-toolbar { max-width: calc(100% - 16px); width: calc(100% - 16px); gap: 0; padding: 4px 2px; justify-content: flex-start; } .mlcv-tool { flex: 1 0 27px; min-width: 27px; width: 27px; height: 33px; } .mlcv-tool svg { width: 16px; height: 16px; } .mlcv-status { left: 12px; font-size: 9px; } .mlcv-measure-label { top: 88px; max-width: calc(100% - 24px); } .mlcv-wb-inspector { width: min(245px,calc(100% - 28px)); } }
 }
 @keyframes mlcv-wb-spin { to { transform: rotate(360deg); } }
 @media(prefers-reduced-motion:reduce) { .mlcv-workbench .mlcv-wb-state.is-loading::before { animation: none; } }
+
+// =========================================================
+// Drawing library (/viewer without parameters). The markup comes from the
+// discourse-moaclab-tools plugin; this restyles it as the Instagram theme's
+// Explore grid: one search field, 3 square tiles per row with 4px gaps, the
+// title and author on a dark layer on hover. The format filter and the
+// plugin's two header links are hidden; cad-library-actions.js adds the
+// single "Preview drawing" button. --ig-* colours come from the Instagram
+// theme, with Discourse colours as the fallback for other themes.
+// =========================================================
+.moaclab-cad-library {
+  max-width: 975px;
+  padding: 24px 20px 40px;
+  font-family: var(--ig-font, inherit);
+  color: var(--ig-ink, var(--primary));
+
+  .moaclab-cad-library__heading {
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  // the plugin's "local preview" and "upload" links
+  .moaclab-cad-library__actions > a {
+    display: none;
+  }
+
+  .mlcv-library-preview {
+    min-height: 32px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--ig-radius, 8px);
+    background: var(--ig-btn-primary, var(--tertiary));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(in srgb, var(--ig-btn-primary, var(--tertiary)) 88%, #000);
+      color: #fff;
+    }
+  }
+
+  .moaclab-cad-library__filters {
+    padding-bottom: 16px;
+
+    label[for="cad-library-format"],
+    select {
+      display: none;
+    }
+  }
+
+  .moaclab-cad-library__search {
+    position: relative;
+    max-width: none;
+
+    input {
+      height: 40px;
+      padding: 0 44px 0 16px;
+      border: 0;
+      border-radius: var(--ig-radius, 8px);
+      background: var(--ig-pill, var(--primary-very-low));
+      color: var(--ig-ink, var(--primary));
+      font-size: 14px;
+      box-shadow: none;
+
+      &::placeholder {
+        color: var(--ig-muted, var(--primary-medium));
+      }
+    }
+
+    .btn {
+      position: absolute;
+      inset-block: 0;
+      right: 0;
+      min-height: 40px;
+      border: 0;
+      border-radius: 0 var(--ig-radius, 8px) var(--ig-radius, 8px) 0;
+      background: transparent;
+      color: var(--ig-muted, var(--primary-medium));
+
+      .d-icon {
+        color: currentcolor;
+      }
+    }
+  }
+
+  .moaclab-cad-library__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .moaclab-cad-library__card {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 0;
+    background: var(--ig-pill, var(--primary-very-low));
+  }
+
+  .moaclab-cad-library__image {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    aspect-ratio: auto;
+    background: transparent;
+
+    img {
+      object-fit: contain;
+    }
+  }
+
+  .moaclab-cad-library__format {
+    top: 8px;
+    right: 8px;
+    bottom: auto;
+    left: auto;
+    z-index: 2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgb(0 0 0 / 55%);
+    color: #fff;
+    font-size: 11px;
+    line-height: 16px;
+  }
+
+  // title + author on a dark layer; clicks fall through to the image link
+  .moaclab-cad-library__body {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(0 0 0 / 40%);
+    color: #fff;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .moaclab-cad-library__card:hover .moaclab-cad-library__body,
+  .moaclab-cad-library__card:focus-within .moaclab-cad-library__body {
+    opacity: 1;
+  }
+
+  .moaclab-cad-library__body h2 {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+
+    a,
+    a:visited {
+      color: #fff;
+    }
+  }
+
+  .moaclab-cad-library__byline {
+    justify-content: center;
+    gap: 12px;
+    margin: 0;
+    color: rgb(255 255 255 / 85%);
+    font-size: 13px;
+  }
+
+  .moaclab-cad-library__card-actions {
+    display: none;
+  }
+
+  .moaclab-cad-library__status {
+    padding-block: 24px;
+    color: var(--ig-muted, var(--primary-medium));
+
+    .btn {
+      min-height: 32px;
+      border: 0;
+      border-radius: var(--ig-radius, 8px);
+      background: var(--ig-btn-secondary, var(--primary-low));
+      color: var(--ig-ink, var(--primary));
+      font-weight: 600;
+    }
+  }
+
+  @media (width <= 767px) {
+    padding: 12px 0 24px;
+
+    .moaclab-cad-library__heading,
+    .moaclab-cad-library__filters {
+      padding-inline: 16px;
+    }
+
+    .moaclab-cad-library__heading {
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .moaclab-cad-library__grid {
+      gap: 3px;
+    }
+  }
+}

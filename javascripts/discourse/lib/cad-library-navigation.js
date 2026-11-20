@@ -24,7 +24,6 @@ export default function rememberDrawingLibrary(api) {
         title: card?.querySelector("h2")?.textContent?.trim(),
         username: card?.querySelector(".moaclab-cad-library__byline")?.childNodes[0]?.textContent?.trim(),
         query: document.querySelector("#cad-library-query")?.value || "",
-        format: document.querySelector("#cad-library-format")?.value || "",
         scroll: window.scrollY,
       }));
     } catch { /* Private browsing can disable session storage. */ }
@@ -40,10 +39,10 @@ export default function rememberDrawingLibrary(api) {
     const restore = () => {
       if (generation !== token || location.pathname !== "/viewer" || location.search) { return; }
       const input = document.querySelector("#cad-library-query");
-      const select = document.querySelector("#cad-library-format");
-      if (!input || !select) { if (++attempts < 20) { setTimeout(restore, 100); } return; }
+      // The format filter is hidden (common.scss), so only the search text is restored.
+      if (!input) { if (++attempts < 20) { setTimeout(restore, 100); } return; }
       input.value = memory.query; input.dispatchEvent(new Event("input", { bubbles: true }));
-      select.value = memory.format; select.dispatchEvent(new Event("change", { bubbles: true }));
+      if (memory.query) { input.form?.requestSubmit(); }
       let waits = 0;
       const restoreScroll = () => {
         if (generation !== token || location.pathname !== "/viewer" || location.search) { return; }
