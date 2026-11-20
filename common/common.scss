@@ -353,6 +353,11 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
     opacity: 1;
   }
 
+  .moaclab-cad-library__body > * {
+    flex-shrink: 0;
+    max-width: 100%;
+  }
+
   .moaclab-cad-library__body h2 {
     display: -webkit-box;
     margin: 0;
@@ -379,6 +384,44 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
 
   .moaclab-cad-library__card-actions {
     display: none;
+  }
+
+  // topics without a thumbnail: title and author on grey, like the
+  // Instagram theme's text-only tiles; the dark layer still shows on hover
+  .moaclab-cad-library__card:has(.moaclab-cad-library__image > .d-icon) {
+    .moaclab-cad-library__image > .d-icon {
+      display: none;
+    }
+
+    .moaclab-cad-library__body {
+      opacity: 1;
+      background: transparent;
+      transition: background-color 0.15s ease;
+    }
+
+    .moaclab-cad-library__body h2 a,
+    .moaclab-cad-library__body h2 a:visited {
+      color: var(--ig-ink, var(--primary));
+    }
+
+    .moaclab-cad-library__byline {
+      color: var(--ig-muted, var(--primary-medium));
+    }
+
+    &:hover,
+    &:focus-within {
+      .moaclab-cad-library__body {
+        background: rgb(0 0 0 / 40%);
+      }
+
+      .moaclab-cad-library__body h2 a {
+        color: #fff;
+      }
+
+      .moaclab-cad-library__byline {
+        color: rgb(255 255 255 / 85%);
+      }
+    }
   }
 
   .moaclab-cad-library__status {
@@ -410,6 +453,28 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
 
     .moaclab-cad-library__grid {
       gap: 3px;
+    }
+
+    // 3 tiles across a phone are ~120px wide
+    .moaclab-cad-library__body {
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .moaclab-cad-library__body h2 {
+      font-size: 13px;
+      line-height: 17px;
+    }
+
+    // author only: the reply count does not fit next to it
+    .moaclab-cad-library__byline {
+      flex-wrap: nowrap;
+      font-size: 11px;
+      white-space: nowrap;
+
+      span {
+        display: none;
+      }
     }
   }
 }

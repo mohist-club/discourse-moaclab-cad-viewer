@@ -7,6 +7,7 @@ import { serializeDrawingSvg } from "../lib/cad-svg-snapshot";
 import { installCadFileSnapshot, readUploadResponse, uploadErrorHint } from "../lib/cad-upload-errors";
 import rememberDrawingLibrary, { drawingContext } from "../lib/cad-library-navigation";
 import installLibraryActions, { takePendingLocalFile } from "../lib/cad-library-actions";
+import installLibrarySource from "../lib/cad-library-source";
 
 export default apiInitializer((api) => {
   const NS = "moaclab-cad-viewer";
@@ -42,6 +43,7 @@ export default apiInitializer((api) => {
     bridge: null,
   };
   rememberDrawingLibrary(api);
+  installLibrarySource(api, Number(themeSettings.library_category_id ?? 9) || 0);
   const enhanceLibrary = installLibraryActions(api, t);
   const isLibrary = () => window.location.pathname === "/viewer" && !isRoute();
 
