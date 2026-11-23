@@ -75,6 +75,7 @@ zh_CN:
     front: "前视"
     right: "右视"
     close: "关闭"
+    openPanel: "展开面板"
     visibility: "可见性"
     partColor: "部件颜色"
     gmkPalette: "GMK 标准色"

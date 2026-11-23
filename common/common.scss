@@ -128,6 +128,7 @@ body.moaclab-cad-viewer-route .sidebar-section-link[data-link-name="moaclab-cad-
   .mlcv-viewcube button { position: static; min-width: 27px; height: 25px; padding: 3px 6px; border-radius: 3px; font-size: 10px; line-height: 1; }
   .mlcv-viewcube button:hover { background: var(--mlcv-accent-soft); }
   .mlcv-viewcube svg { width: 14px; height: 14px; }
+  .mlcv-viewcube .mlcv-wb-panel-reopen { margin-left: 3px; padding: 0; width: 27px; border: 0; border-left: 1px solid var(--mlcv-line); border-radius: 0 3px 3px 0; background: transparent; }
   .mlcv-toolbar, .mlcv-shell:fullscreen .mlcv-toolbar, .mlcv-shell:-webkit-full-screen .mlcv-toolbar { left: 50%; right: auto; bottom: max(50px, calc(env(safe-area-inset-bottom) + 36px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); height: auto; justify-content: safe center; padding: 5px; gap: 1px; border: 1px solid var(--mlcv-line); border-radius: 8px; background: color-mix(in srgb,var(--mlcv-panel) 96%,transparent); box-shadow: 0 3px 16px #20272b0d; overflow-x: auto; }
   .mlcv-tool { width: 30px; min-width: 30px; height: 33px; padding: 0; border-radius: 5px; }
   .mlcv-tool svg { width: 17px; height: 17px; }

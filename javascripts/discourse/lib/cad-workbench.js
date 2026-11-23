@@ -130,12 +130,24 @@ export default function installCadWorkbench(viewer, options = {}) {
     node.dataset.wbTab = value; node.setAttribute("role", "tab"); tabs.append(node);
   }
   tabs.append(button("PanelRightClose",t("close", "Close"),()=>viewer.closePanel()));
+  // Reopen the collapsed inspector: last item of the view-button group, shown
+  // only while the inspector is closed. The icon (lucide panel-right-open) is
+  // inline because cad-workbench-icons.js is a generated file.
+  const openInspector = element("button", "mlcv-wb-button mlcv-wb-panel-reopen");
+  openInspector.type = "button";
+  openInspector.title = t("openPanel", "Show panel");
+  openInspector.setAttribute("aria-label", openInspector.title);
+  openInspector.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right-open" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path><path d="m10 15-3-3 3-3"></path></svg>';
+  openInspector.hidden = true;
+  listen(openInspector, "click", () => viewer.openPanel(activePanel));
+  viewcube.append(openInspector);
   inspector.append(tabs, viewer.panel);
   viewer.shell.append(inspector);
   const foot = element("div", "mlcv-wb-foot", t("localRendering", "Rendered locally")); inspector.append(foot);
   const togglePanel = (open) => {
     root.classList.toggle("mlcv-wb-panel-open", open);
     inspector.hidden = !open; viewer.panel.hidden = !open;
+    openInspector.hidden = open || !!options.embedded;
     defer(() => viewer.resize());
   };
   const notice = element("div", "mlcv-wb-state"); notice.hidden = true; notice.setAttribute("role", "status");
