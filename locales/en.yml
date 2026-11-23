@@ -75,6 +75,7 @@ en:
     front: "Front"
     right: "Right"
     close: "Close"
+    openPanel: "Show panel"
     visibility: "Visibility"
     partColor: "Part color"
     gmkPalette: "GMK stock colors"
