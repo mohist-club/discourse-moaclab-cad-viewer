@@ -24,8 +24,10 @@ export default function installLibraryActions(api, t) {
     }
   }
 
-  // A hidden file input whose chosen file opens the viewer.
-  function filePicker() {
+  return function enhanceLibrary() {
+    const actions = document.querySelector(".moaclab-cad-library__actions");
+    if (!actions || actions.querySelector(".mlcv-library-preview")) { return; }
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ACCEPT;
@@ -37,14 +39,7 @@ export default function installLibraryActions(api, t) {
       pendingFile = file;
       goToPreview();
     });
-    return input;
-  }
 
-  function enhanceLibrary() {
-    const actions = document.querySelector(".moaclab-cad-library__actions");
-    if (!actions || actions.querySelector(".mlcv-library-preview")) { return; }
-
-    const input = filePicker();
     const button = document.createElement("button");
     button.type = "button";
     button.className = "btn btn-primary mlcv-library-preview";
@@ -53,7 +48,5 @@ export default function installLibraryActions(api, t) {
 
     actions.classList.add("mlcv-library-actions");
     actions.append(button, input);
-  }
-  enhanceLibrary.filePicker = filePicker;
-  return enhanceLibrary;
+  };
 }

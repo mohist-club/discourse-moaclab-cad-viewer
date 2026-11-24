@@ -5,14 +5,6 @@ const previewKey = (url) => {
   return [params.get("id"), params.get("upload"), params.get("url")].filter(Boolean).join("|");
 };
 
-// The resources page (cad-resources.js) records a preview it opens the same
-// way, so the viewer's breadcrumb leads back to it.
-export function rememberPreview({ href, topic_url, title, username, query = "" }) {
-  try {
-    sessionStorage.setItem(KEY, JSON.stringify({ key: previewKey(href), topic_url, title, username, query, scroll: window.scrollY }));
-  } catch { /* Private browsing can disable session storage. */ }
-}
-
 export function drawingContext() {
   const memory = read();
   return memory?.key && memory.key === previewKey(location.href) ? memory : null;

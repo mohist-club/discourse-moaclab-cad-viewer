@@ -11,7 +11,3 @@ library_category_id:
   type: integer
   min: 0
   description: "Category whose topics the /viewer drawing library lists (9 = 资源). A search is limited to the same category. 0 keeps the plugin default: only topics that contain a CAD model."
-resources_page:
-  default: true
-  type: bool
-  description: "Show /viewer as an Instagram-style resources page for the library category: profile header, format and tag highlights, model / drawing / saved tabs, search and sort, and a 3-column grid with like, reply and view counts. Needs library_category_id. Off: the plugin's drawing list."

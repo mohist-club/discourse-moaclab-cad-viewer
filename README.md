@@ -18,13 +18,6 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 - 隐藏格式筛选和插件的两个头部链接，换成一个「图纸预览」按钮：选择本地文件后直接在查看器里打开（`cad-library-actions.js`）。
 - 查看器里打开本地文件后显示「上传分享」，上传模型并打开带短代码的发帖框。
 
-设置 `resources_page` 打开（默认）时，`/viewer` 改为「资源」主页（`cad-resources.js`、`cad-resources-data.js`），插件的列表仍在页面里但被隐藏：
-
-- 页头：栏目名、简介、栏目说明链接，「发布资源」（`/new-topic?category_id=<栏目>`）和「预览本地文件」，资源数 / 格式数 / 贡献者数。
-- 精选圆圈：出现过的模型格式和最常用的标签，点击筛选。标签页：全部、3D 模型、2D 图纸、已收藏（登录用户的书签）。搜索（`/search.json`，限定栏目）和排序（最近活动、最多点赞、最多回复、最多浏览）。
-- 3 列 4:5 网格：有图的话题显示首图，没有图的显示为彩色文字卡片；右上角格式标签；悬停显示点赞、回复、浏览和作者，带模型的话题另有「3D 预览」。
-- 数据只用 Discourse 公开 JSON（`/c/<id>/show.json`、`/c/<slug>/<id>/l/latest.json` 全部页、`/moaclab-cad/drawings.json`、`/u/<me>/bookmarks.json`），页面状态写在网址参数 `tab`、`f`、`q`、`sort` 里。
-
 这些规则依赖插件的组件名 `moaclab-cad-library`、它的 `load()` / `drawings` / `nextBefore` 等字段和类名（`moaclab-cad-library__*`、`#cad-library-format`）。插件改动图纸列表的结构时，要同步检查本组件。
 
 ## 设置
@@ -34,7 +27,6 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 | `show_sidebar_link` | `false` | 自动在侧栏添加 3D Viewer。已在后台导航菜单维护链接时保持关闭。 |
 | `embed_viewer_base` | `/viewer` | 渲染 `[moaclab-3d]` 短代码时使用的地址前缀。 |
 | `library_category_id` | `9` | 图纸列表显示这个栏目的全部话题（9 = 资源），搜索也限定在这个栏目。设为 `0` 时恢复插件默认：只显示带模型的话题。 |
-| `resources_page` | `true` | `/viewer` 显示为 Instagram 风格的资源主页（需要 `library_category_id` 不为 0）。关闭则为插件的图纸列表。 |
 
 ## 生成文件
 
@@ -42,7 +34,7 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 
 ## 开发验证
 
-使用 Node.js 22，运行 `npm ci` 和 `npm test`：检查元数据、编译 SCSS、打包 JavaScript，并运行 `test/` 下的光照、深度和资源页数据单元测试。
+使用 Node.js 22，运行 `npm ci` 和 `npm test`：检查元数据、编译 SCSS、打包 JavaScript，并运行 `test/` 下的光照和深度单元测试。
 
 改版本时同步更新 `about.json` 的 `theme_version` 和 `package.json` 的 `version`，检查会对比两者。
 

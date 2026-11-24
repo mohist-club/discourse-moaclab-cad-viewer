@@ -8,7 +8,6 @@ import { installCadFileSnapshot, readUploadResponse, uploadErrorHint } from "../
 import rememberDrawingLibrary, { drawingContext } from "../lib/cad-library-navigation";
 import installLibraryActions, { takePendingLocalFile } from "../lib/cad-library-actions";
 import installLibrarySource from "../lib/cad-library-source";
-import installResourcePage from "../lib/cad-resources";
 
 export default apiInitializer((api) => {
   const NS = "moaclab-cad-viewer";
@@ -47,10 +46,6 @@ export default apiInitializer((api) => {
   installLibrarySource(api, Number(themeSettings.library_category_id ?? 9) || 0);
   const enhanceLibrary = installLibraryActions(api, t);
   const isLibrary = () => window.location.pathname === "/viewer" && !isRoute();
-  const libraryCategoryId = Number(themeSettings.library_category_id ?? 9) || 0;
-  const resources = (themeSettings.resources_page ?? true) && libraryCategoryId
-    ? installResourcePage(api, { t, categoryId: libraryCategoryId, filePicker: enhanceLibrary.filePicker })
-    : null;
 
   if (themeSettings.show_sidebar_link ?? false) {
     api.addCommunitySectionLink((BaseCommunitySectionLink) => class MoaclabCadViewerSectionLink extends BaseCommunitySectionLink {
@@ -715,11 +710,10 @@ export default apiInitializer((api) => {
     if (isRoute()) {
       document.body.classList.add(`${NS}-route`);
       document.body.classList.toggle(`${NS}-embed`, isEmbed());
-      resources?.unmount();
       syncSidebar(true); reconcile();
     } else {
       syncSidebar(false); close();
-      if (isLibrary()) { enhanceLibrary(); resources?.mount(); } else { resources?.unmount(); }
+      if (isLibrary()) enhanceLibrary();
     }
   }
 
