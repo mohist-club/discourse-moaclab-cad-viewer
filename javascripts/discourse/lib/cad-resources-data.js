@@ -26,6 +26,8 @@ export function topicToResource(topic, users, models) {
     url: `/t/${topic.slug || "topic"}/${topic.id}`,
     image: topic.image_url || model?.image_url || "",
     username: poster?.username || "",
+    avatar: avatarUrl(poster?.avatar_template, 48),
+    pinned: Boolean(topic.pinned || topic.pinned_globally),
     likes: Number(topic.like_count) || 0,
     replies: Math.max(0, (Number(topic.posts_count) || 1) - 1),
     views: Number(topic.views) || 0,
@@ -34,6 +36,11 @@ export function topicToResource(topic, users, models) {
     tags: (topic.tags || []).map(tagName).filter(Boolean),
     order: 0,
   };
+}
+
+export function avatarUrl(template, size) {
+  const value = String(template || "");
+  return value ? value.replace("{size}", String(size)) : "";
 }
 
 function decodeEntities(text) {
@@ -70,6 +77,18 @@ export function resourceStats(items) {
   };
 }
 
+// Authors with the most resources first, for the "contributors include" row.
+export function resourceContributors(items) {
+  const byName = new Map();
+  for (const item of items) {
+    if (!item.username) { continue; }
+    const entry = byName.get(item.username) || { username: item.username, avatar: item.avatar, count: 0 };
+    entry.count += 1;
+    byName.set(item.username, entry);
+  }
+  return [...byName.values()].sort((a, b) => b.count - a.count || a.username.localeCompare(b.username));
+}
+
 // Highlight circles: formats first (most used), then the most used tags.
 export function resourceHighlights(items, max = 8) {
   const count = (values) => {
@@ -98,7 +117,8 @@ export function filterResources(items, { tab = "all", filter = "", searchIds = n
     if (sort === "latest") { return out.sort((a, b) => rank.get(a.id) - rank.get(b.id)); }
   }
   const key = { likes: "likes", replies: "replies", views: "views" }[sort];
-  return [...out].sort((a, b) => (key ? b[key] - a[key] : 0) || a.order - b.order);
+  const pinFirst = (a, b) => (sort === "latest" ? Number(b.pinned) - Number(a.pinned) : 0);
+  return [...out].sort((a, b) => pinFirst(a, b) || (key ? b[key] - a[key] : 0) || a.order - b.order);
 }
 
 // Page state kept in the URL (?tab=&f=&q=&sort=), so back and reload return

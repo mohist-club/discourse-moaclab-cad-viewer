@@ -20,9 +20,9 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 
 设置 `resources_page` 打开（默认）时，`/viewer` 改为「资源」主页（`cad-resources.js`、`cad-resources-data.js`），插件的列表若有则仍在页面里但被隐藏；插件 1.5 秒内没有渲染列表时，资源主页直接显示在 `#main-outlet` 里，`/viewer` 不再依赖插件列表才能显示：
 
-- 页头：栏目名、简介、栏目说明链接，「发布资源」（`/new-topic?category_id=<栏目>`）和「预览本地文件」，资源数 / 格式数 / 贡献者数。
-- 精选圆圈：出现过的模型格式和最常用的标签，点击筛选。标签页：全部、3D 模型、2D 图纸、已收藏（登录用户的书签）。搜索（`/search.json`，限定栏目）和排序（最近活动、最多点赞、最多回复、最多浏览）。
-- 3 列 4:5 网格：有图的话题显示首图，没有图的显示为彩色文字卡片；右上角格式标签；悬停显示点赞、回复、浏览和作者，带模型的话题另有「3D 预览」。
+- 版式按 instagram.com 2026 年的桌面主页：头像右边是栏目名、资源 / 格式 / 贡献者数、简介、栏目说明链接和「贡献者包括 …」；下面一整行按钮：「发布资源」（`/new-topic?category_id=<栏目>`）、「预览本地文件」、搜索按钮（展开搜索框和排序）。
+- 精选圆圈：出现过的模型格式和最常用的标签，点击筛选。只有图标的标签页：全部、3D 模型、2D 图纸、已收藏（登录用户的书签）。
+- 4 列（窄屏 3 列）3:4 网格：有图的话题显示首图，没有图的显示为彩色文字卡片；置顶话题排在前面并带图钉；右上角格式标签；悬停显示点赞、回复、浏览和作者，带模型的话题另有「3D 预览」。
 - 数据只用 Discourse 公开 JSON（`/c/<id>/show.json`、`/c/<slug>/<id>/l/latest.json` 全部页、`/moaclab-cad/drawings.json`、`/u/<me>/bookmarks.json`），页面状态写在网址参数 `tab`、`f`、`q`、`sort` 里。
 
 这些规则依赖插件的组件名 `moaclab-cad-library`、它的 `load()` / `drawings` / `nextBefore` 等字段和类名（`moaclab-cad-library__*`、`#cad-library-format`）。插件改动图纸列表的结构时，要同步检查本组件。

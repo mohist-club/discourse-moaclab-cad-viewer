@@ -12,7 +12,7 @@
 import { getJSON, loadModelTopics } from "./cad-library-source";
 import { rememberPreview } from "./cad-library-navigation";
 import {
-  DRAWING_FORMATS, filterResources, listsToResources, readState, resourceHighlights,
+  DRAWING_FORMATS, filterResources, listsToResources, readState, resourceContributors, resourceHighlights,
   resourceStats, textTileColor, writeState,
 } from "./cad-resources-data";
 
@@ -33,6 +33,8 @@ const ICONS = {
   heart: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-8-4.7-8-10.6A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.9c0 5.9-8 10.6-8 10.6z"/></svg>',
   reply: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 12a8 8 0 1 1 3.6 6.7L4 20l1.3-3.6A8 8 0 0 1 4 12z"/></svg>',
   eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.4 2.6a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4l-1.8 1.8a1 1 0 0 1-1.1.2l-3.3 3.3.3 3.4a1 1 0 0 1-.3.8l-1.2 1.2a1 1 0 0 1-1.4 0l-3.2-3.2-4.7 4.7-1.4-1.4 4.7-4.7-3.2-3.2a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 .8-.3l3.4.3 3.3-3.3a1 1 0 0 1 .2-1.1z"/></svg>',
   rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="4"/><path d="M17 6.5 19 8l-2 1.6"/></svg>',
 };
 
@@ -160,30 +162,37 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
   }
 
   // ---- header -----------------------------------------------------------
+  // Instagram profile header: avatar, name, a line under it, the counts,
+  // the description and the section's about link, then who contributes.
   function renderHeader() {
     const head = root.querySelector(".mlcv-res__head");
     const stats = resourceStats(data.items);
-    const picker = filePicker();
-    const actions = el("div", { class: "mlcv-res__actions" }, [
-      el("a", { class: "mlcv-res__btn mlcv-res__btn--primary", href: `/new-topic?category_id=${categoryId}`, text: t("publishResource", "Publish") }),
-      el("button", { type: "button", class: "mlcv-res__btn", onclick: () => picker.click() }, [icon("folder"), el("span", { text: t("previewLocalFile", "Preview a local file") })]),
-      picker,
-    ]);
+    const people = resourceContributors(data.items);
     const stat = (value, label) => el("li", {}, [el("b", { text: String(value) }), el("span", { text: label })]);
     const bio = el("div", { class: "mlcv-res__bio" }, [
+      el("div", { class: "mlcv-res__bio-label", text: t("resourcesSubtitle", "Drawings · models · tool files") }),
       data.category.description ? el("p", { text: data.category.description }) : null,
-      data.category.aboutUrl ? el("a", { href: data.category.aboutUrl, text: t("aboutResources", "About this section") }) : null,
+      data.category.aboutUrl ? el("a", { class: "mlcv-res__bio-link", href: data.category.aboutUrl }, [icon("link"), el("span", { text: t("aboutResources", "About this section") })]) : null,
     ]);
+    const shown = people.slice(0, 2).map((person) => person.username);
+    const rest = Math.max(0, people.length - shown.length);
+    const contributors = people.length ? el("div", { class: "mlcv-res__people" }, [
+      el("span", { class: "mlcv-res__faces", "aria-hidden": "true" }, people.slice(0, 3).map((person) => person.avatar
+        ? el("img", { src: person.avatar, alt: "", loading: "lazy" })
+        : el("span", { text: person.username.charAt(0).toUpperCase() }))),
+      el("span", { text: `${t("contributorsInclude", "Contributors include")} ${shown.join(t("listSeparator", ", "))}${rest ? ` +${rest}` : ""}` }),
+    ]) : null;
     head.replaceChildren(
       el("div", { class: "mlcv-res__avatar" }, [el("span", { html: ICONS.cube })]),
       el("div", { class: "mlcv-res__info" }, [
-        el("div", { class: "mlcv-res__title-row" }, [el("h1", { text: data.category.name }), actions]),
+        el("h1", { text: data.category.name }),
         el("ul", { class: "mlcv-res__stats" }, [
           stat(stats.resources, t("statResources", "resources")),
           stat(stats.formats, t("statFormats", "formats")),
           stat(stats.contributors, t("statContributors", "contributors")),
         ]),
         bio,
+        contributors,
       ]),
     );
   }
@@ -224,6 +233,7 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
     if (input && document.activeElement !== input) { input.value = state.query; }
     const select = root.querySelector(".mlcv-res__sort select");
     if (select) { select.value = state.sort; }
+    if (state.query || state.sort !== "latest") { toggleSearch(true); }
   }
 
   // ---- grid -------------------------------------------------------------
@@ -248,7 +258,10 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
       ]),
       item.username ? el("span", { class: "mlcv-res__overlay-author", text: `@${item.username}` }) : null,
     ]);
-    const badges = item.format ? el("span", { class: "mlcv-res__badges", "aria-hidden": "true" }, [el("span", { text: item.format })]) : null;
+    const badges = item.pinned || item.format ? el("span", { class: "mlcv-res__badges", "aria-hidden": "true" }, [
+      item.pinned ? icon("pin", "mlcv-res__badge-icon") : null,
+      item.format ? el("span", { class: "mlcv-res__badge-format", text: item.format }) : null,
+    ]) : null;
     const preview = item.previewUrl ? el("a", {
       class: "mlcv-res__preview",
       href: item.previewUrl,
@@ -335,18 +348,44 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
         el("option", { value: "views", text: t("sortViews", "Most viewed") }),
       ]),
     ]);
+    const picker = filePicker();
+    const searchToggle = el("button", {
+      type: "button",
+      class: "mlcv-res__btn mlcv-res__btn--square",
+      "aria-label": t("searchResources", "Search resources"),
+      "aria-expanded": "false",
+      onclick: () => toggleSearch(),
+    }, [icon("search")]);
     return el("section", { class: "mlcv-res", "aria-label": t("resources", "Resources") }, [
       el("header", { class: "mlcv-res__head" }, [el("div", { class: "mlcv-res__avatar" }, [el("span", { html: ICONS.cube })])]),
+      el("div", { class: "mlcv-res__actions" }, [
+        el("a", { class: "mlcv-res__btn mlcv-res__btn--primary", href: `/new-topic?category_id=${categoryId}`, text: t("publishResource", "Publish") }),
+        el("button", { type: "button", class: "mlcv-res__btn", onclick: () => picker.click(), text: t("previewLocalFile", "Preview a local file") }),
+        searchToggle,
+        picker,
+      ]),
       el("nav", { class: "mlcv-res__highlights", "aria-label": t("highlights", "Formats and tags"), hidden: true }),
       el("div", { class: "mlcv-res__tabs", role: "tablist", "aria-label": t("resourceTypes", "Resource types") },
         tabs.map(([id, iconName, label]) => el("button", {
           type: "button", role: "tab", class: "mlcv-res__tab", "data-tab": id,
+          "aria-label": label, title: label,
           onclick: () => setState({ tab: id }),
-        }, [icon(iconName), el("span", { text: label })]))),
-      el("div", { class: "mlcv-res__toolbar" }, [form, sort]),
+        }, [icon(iconName)]))),
+      el("div", { class: "mlcv-res__toolbar", hidden: true }, [form, sort]),
       el("div", { class: "mlcv-res__grid", "aria-live": "polite", "aria-busy": "true" }),
       el("div", { class: "mlcv-res__status", role: "status" }),
     ]);
+  }
+
+  // The search row opens from the square button next to the actions, and
+  // stays open while a search or a non-default sort is active.
+  function toggleSearch(open) {
+    const bar = root?.querySelector(".mlcv-res__toolbar");
+    if (!bar) { return; }
+    const show = open ?? bar.hidden;
+    bar.hidden = !show;
+    root.querySelector(".mlcv-res__btn--square")?.setAttribute("aria-expanded", show ? "true" : "false");
+    if (show && open === undefined) { bar.querySelector("input")?.focus(); }
   }
 
   // Placed right before the plugin's list when the plugin renders one (the
