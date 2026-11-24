@@ -1,7 +1,8 @@
 // The resources page: /viewer without parameters shown as an Instagram
 // profile of the library category (resources_page setting). It replaces the
-// plugin's drawing list on screen (the list stays in the DOM, hidden by the
-// body class) and reads only public Discourse JSON:
+// plugin's drawing list on screen when there is one (the list stays in the
+// DOM, hidden by the body class), and shows on its own when the plugin
+// renders no list. It reads only public Discourse JSON:
 //   /c/<id>/show.json            name, description, about topic
 //   /c/<slug>/<id>/l/latest.json  the topics, every page
 //   /moaclab-cad/drawings.json    which topics carry a model, and its format
@@ -19,6 +20,7 @@ const BODY_CLASS = "mlcv-resources-on";
 const LIST_PAGES = 10;
 const CACHE_MS = 60 * 1000;
 const SCROLL_KEY = "moaclab-cad-resources-scroll-v1";
+const LIST_WAIT_MS = 1500;
 
 const ICONS = {
   cube: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg>',
@@ -347,22 +349,48 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
     ]);
   }
 
+  // Placed right before the plugin's list when the plugin renders one (the
+  // list is then hidden); when no list shows up within LIST_WAIT_MS the page
+  // stands on its own inside #main-outlet, so /viewer is never left empty.
+  let waitingSince = 0;
+  let waitTimer = null;
+
+  function placement() {
+    const library = document.querySelector(".moaclab-cad-library");
+    if (library) { return { before: library }; }
+    if (!waitingSince) { waitingSince = Date.now(); }
+    if (Date.now() - waitingSince < LIST_WAIT_MS) {
+      clearTimeout(waitTimer);
+      waitTimer = setTimeout(mount, LIST_WAIT_MS);
+      return null;
+    }
+    const outlet = document.querySelector("#main-outlet");
+    return outlet ? { inside: outlet } : null;
+  }
+
   function mount() {
     if (!categoryId) { return; }
-    const library = document.querySelector(".moaclab-cad-library");
-    if (!library) { return; }
-    if (root?.isConnected && root.nextElementSibling === library) { return; }
+    if (location.pathname !== "/viewer") { return; }
+    const target = placement();
+    if (!target) { return; }
+    if (root?.isConnected) {
+      if (target.before && root.nextElementSibling !== target.before) { target.before.before(root); }
+      return;
+    }
     root?.remove();
     state = readState(location.search);
     data = null;
     restoreScroll = true;
     root = build();
-    library.before(root);
+    if (target.before) { target.before.before(root); } else { target.inside.append(root); }
     document.body.classList.add(BODY_CLASS);
     refresh();
   }
 
   function unmount() {
+    clearTimeout(waitTimer);
+    waitTimer = null;
+    waitingSince = 0;
     root?.remove();
     root = null;
     savedIds = null;
