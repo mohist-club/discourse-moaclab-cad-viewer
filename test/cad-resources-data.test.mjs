@@ -71,3 +71,23 @@ test("the tab round-trips through the URL and rejects unknown values", () => {
   assert.equal(normalizeFormat(".stp"), "STP");
   assert.equal(normalizeFormat("<b>"), "");
 });
+
+test("models inside a post: shortcodes, then CAD attachments", async () => {
+  const { postModels, viewerUrlFor } = await import("../javascripts/discourse/lib/cad-resources-data.js");
+  const cooked = '<p>[moaclab-3d id=&quot;0123456789abcdef&quot; ext=&quot;step&quot; title=&quot;BOT60 芯片版&quot;]</p>'
+    + '<p>[moaclab-3d upload="upload://AbC123.stl" type="stl"]</p>'
+    + '<p>[moaclab-3d id="bad" ext="step"]</p>';
+  const models = postModels(cooked, [
+    { name: "plate.dxf", href: "/uploads/short-url/xyz.dxf" },
+    { name: "notes.pdf", href: "/uploads/short-url/n.pdf" },
+    { name: "plate.dxf", href: "/uploads/short-url/xyz.dxf" },
+  ]);
+  assert.deepEqual(models.map((m) => [m.format, m.href]), [
+    ["STEP", "/viewer?id=0123456789abcdef&ext=step&name=BOT60+%E8%8A%AF%E7%89%87%E7%89%88"],
+    ["STL", "/viewer?upload=upload%3A%2F%2FAbC123.stl&ext=stl"],
+    ["DXF", "/viewer?url=%2Fuploads%2Fshort-url%2Fxyz.dxf&ext=dxf&name=plate.dxf"],
+  ]);
+  assert.equal(viewerUrlFor({ url: "javascript:alert(1)", ext: "step" }), null);
+  assert.equal(viewerUrlFor({ url: "//evil.example/x.step", ext: "step" }), null);
+  assert.equal(viewerUrlFor({ id: "0123456789abcdef", ext: "exe" }), null);
+});

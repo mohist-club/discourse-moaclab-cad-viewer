@@ -79,6 +79,7 @@ zh_CN:
     likesCount: "次赞"
     repliesCount: "条回复"
     resourcesLoading: "加载中…"
+    download: "下载"
     previewDrawing: "图纸预览"
     drawingLibrary: "图纸列表"
     open: "3D 查看器"

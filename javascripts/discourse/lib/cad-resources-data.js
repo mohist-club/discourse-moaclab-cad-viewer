@@ -142,3 +142,80 @@ const TEXT_TILE_COLORS = ["#fff4d6", "#e8f6ee", "#eef3ff", "#f3eefe", "#fde8ec",
 export function textTileColor(id) {
   return TEXT_TILE_COLORS[Math.abs(Number(id) || 0) % TEXT_TILE_COLORS.length];
 }
+
+// ---- models inside a post ---------------------------------------------------------
+// The detail pop-up previews the model a post carries even when the plugin's
+// model list does not know the topic: a [moaclab-3d …] shortcode (kept as
+// text in the cooked HTML; the component renders it on the client) or a CAD
+// attachment. Both become a /viewer URL the viewer route accepts.
+const VIEWABLE = /^(step|stp|igs|iges|dxf|dwg|glb|gltf|stl|obj)$/;
+const SHORTCODE = /\[moaclab-3d\s+([^\]]+)\]/g;
+
+function decodeHtml(text) {
+  return String(text || "")
+    .replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
+function shortcodeAttrs(raw) {
+  const attrs = {};
+  raw.replace(/([a-z0-9_-]+)\s*=\s*(?:"([^"]*)"|“([^”]*)”|'([^']*)'|‘([^’]*)’|([^\s]+))/gi, (_, key, v1, v2, v3, v4, v5) => {
+    attrs[key.toLowerCase()] = v1 ?? v2 ?? v3 ?? v4 ?? v5 ?? "";
+    return "";
+  });
+  return attrs;
+}
+
+export function fileExtension(name) {
+  const match = String(name || "").split(/[?#]/)[0].match(/\.([a-z0-9]+)$/i);
+  return match ? match[1].toLowerCase() : "";
+}
+
+// A /viewer URL (not embedded) for one model source, or null.
+export function viewerUrlFor({ id, upload, url, ext, name }) {
+  const type = String(ext || "").toLowerCase();
+  if (!VIEWABLE.test(type)) { return null; }
+  const params = new URLSearchParams();
+  if (id) {
+    if (!/^[a-f0-9]{16}$/.test(id)) { return null; }
+    params.set("id", id);
+  } else if (upload) {
+    if (!/^upload:\/\/[A-Za-z0-9._-]+$/.test(upload)) { return null; }
+    params.set("upload", upload);
+  } else if (url) {
+    if (!/^(\/(?!\/)|https?:\/\/)/i.test(url)) { return null; }
+    params.set("url", url);
+  } else {
+    return null;
+  }
+  params.set("ext", type);
+  if (name) { params.set("name", String(name).slice(0, 120)); }
+  return `/viewer?${params}`;
+}
+
+// Models in one post's cooked HTML, shortcodes first, then attachments
+// ([{ name, href }] as read from the same post), each once.
+export function postModels(cooked, attachments = []) {
+  const out = [];
+  const seen = new Set();
+  const add = (href, name, format) => {
+    if (href && !seen.has(href)) { seen.add(href); out.push({ href, name, format: format.toUpperCase() }); }
+  };
+  const text = decodeHtml(String(cooked || "").replace(/<[^>]+>/g, " "));
+  for (const match of text.matchAll(SHORTCODE)) {
+    const attrs = shortcodeAttrs(match[1]);
+    const ext = (attrs.ext || attrs.type || "").toLowerCase();
+    const name = attrs.title || attrs.name || "";
+    add(viewerUrlFor({ id: attrs.id, upload: attrs.upload, url: attrs.url, ext, name }), name, ext);
+  }
+  for (const file of attachments) {
+    const ext = fileExtension(file.name) || fileExtension(file.href);
+    let url = file.href;
+    try {
+      const parsed = new URL(file.href, "https://same.origin");
+      if (parsed.origin === "https://same.origin" || (typeof location !== "undefined" && parsed.origin === location.origin)) { url = parsed.pathname + parsed.search; }
+    } catch { continue; }
+    add(viewerUrlFor({ url, ext, name: file.name }), file.name, ext);
+  }
+  return out;
+}

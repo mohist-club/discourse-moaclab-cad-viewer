@@ -11,7 +11,7 @@
 import { getJSON } from "./cad-library-source";
 import { rememberPreview } from "./cad-library-navigation";
 import { el, icon } from "./cad-resources-dom";
-import { textTileColor } from "./cad-resources-data";
+import { fileExtension, postModels, textTileColor } from "./cad-resources-data";
 
 const CAD_EXT = /\.(step|stp|iges|igs|dxf|dwg|glb|gltf|stl|obj|zip|rar|7z|pdf)$/i;
 const REPLY_LIMIT = 6;
@@ -144,35 +144,69 @@ export default function createResourceDetail({ t }) {
     });
   }
 
-  // ---- left: the model, the picture or the title ---------------------------------
-  function renderMedia(item, topic) {
+  // ---- what the post carries ----------------------------------------------------------
+  // Models: the plugin's model list first, then shortcodes and CAD
+  // attachments in the first post. Attachments that are not models are
+  // plain downloads.
+  function contents(item, topic) {
+    const cooked = topic ? readCooked(topic.post_stream?.posts?.[0]?.cooked) : null;
+    const models = [];
+    if (item.previewUrl) { models.push({ href: item.previewUrl, name: item.title, format: item.format }); }
+    if (cooked) {
+      for (const model of postModels(topic.post_stream.posts[0].cooked, cooked.files)) {
+        if (!models.some((known) => known.href === model.href)) { models.push(model); }
+      }
+    }
+    const modelFiles = new Set(models.map((model) => model.name));
+    const downloads = cooked ? cooked.files.filter((file) => !modelFiles.has(file.name) || !/^(step|stp|igs|iges|dxf|dwg|glb|gltf|stl|obj)$/.test(fileExtension(file.name) || fileExtension(file.href))) : [];
+    const attachmentFor = (model) => cooked?.files.find((file) => file.name === model.name);
+    return { cooked, models, downloads, attachmentFor, picture: item.image || cooked?.image || null };
+  }
+
+  // ---- left: the drawing preview, else the picture, else the title -----------------------
+  function renderMedia(item, topic, choice = 0) {
     const media = layer.querySelector(".mlcv-rd__media");
-    const key = `${item.id}:${item.previewUrl ? "3d" : "img"}`;
+    const { models, picture } = contents(item, topic);
+    const model = models[Math.min(choice, models.length - 1)];
+    const waiting = !model && topic === null; // the post may still name a model
+    const key = `${item.id}:${model ? `3d:${model.href}` : waiting ? "wait" : picture ? "img" : "text"}:${models.length}`;
     if (media.dataset.key === key && media.childElementCount) { return; }
-    let picture = item.image;
-    if (!picture && topic) { picture = readCooked(topic.post_stream?.posts?.[0]?.cooked).image; }
     media.dataset.key = key;
     media.className = "mlcv-rd__media";
-    if (item.previewUrl) {
-      const src = new URL(item.previewUrl, location.origin);
+    media.style.backgroundColor = "";
+    if (model) {
+      const src = new URL(model.href, location.origin);
       src.searchParams.set("embed", "1");
-      if (item.title && !src.searchParams.get("name")) { src.searchParams.set("name", item.title); }
+      if (!src.searchParams.get("name")) { src.searchParams.set("name", model.name || item.title); }
       media.classList.add("mlcv-rd__media--model");
       media.replaceChildren(
-        el("iframe", { src: src.pathname + src.search, title: `${t("preview3d", "3D preview")}: ${item.title}`, allowfullscreen: true, loading: "eager" }),
-        el("a", { class: "mlcv-rd__open-viewer", href: item.previewUrl }, [icon("rotate", "mlcv-rd__icon"), el("span", { text: t("openInViewer", "Open in viewer") })]),
+        el("iframe", { src: src.pathname + src.search, title: `${t("preview3d", "3D preview")}: ${model.name || item.title}`, allowfullscreen: true }),
+        models.length > 1 ? el("div", { class: "mlcv-rd__models", role: "tablist", "aria-label": t("files", "Files") }, models.map((entry, at) => el("button", {
+          type: "button",
+          role: "tab",
+          class: `mlcv-rd__model${entry === model ? " is-active" : ""}`,
+          "aria-selected": entry === model ? "true" : "false",
+          title: entry.name || item.title,
+          text: entry.format || String(at + 1),
+          onclick: () => renderMedia(item, topic, at),
+        }))) : null,
+        el("a", { class: "mlcv-rd__open-viewer", href: model.href }, [icon("rotate", "mlcv-rd__icon"), el("span", { text: t("openInViewer", "Open in viewer") })]),
       );
+      media.querySelector(".mlcv-rd__open-viewer").addEventListener("click", () => {
+        rememberPreview({ href: new URL(model.href, location.origin).href, topic_url: item.url, title: item.title, username: item.username });
+        close();
+      }, { once: true });
+    } else if (waiting) {
+      media.classList.add("mlcv-rd__media--loading");
+      media.replaceChildren(el("span", { class: "mlcv-rd__spinner", role: "status", "aria-label": t("resourcesLoading", "Loading…") }));
     } else if (picture) {
       media.classList.add("mlcv-rd__media--image");
       media.replaceChildren(el("img", { src: picture, alt: item.title }));
     } else {
-      if (!topic) { media.dataset.key = ""; }
       media.classList.add("mlcv-rd__media--text");
       media.style.backgroundColor = textTileColor(item.id);
       media.replaceChildren(el("div", { class: "mlcv-rd__media-title", text: item.title }));
-      return;
     }
-    media.style.backgroundColor = "";
   }
 
   // ---- right: the post ---------------------------------------------------------------
@@ -182,10 +216,11 @@ export default function createResourceDetail({ t }) {
     const first = posts[0];
     const author = topic?.details?.created_by?.username || first?.username || item.username;
     const avatarTemplate = topic?.details?.created_by?.avatar_template || first?.avatar_template;
-    const cooked = first ? readCooked(first.cooked) : { blocks: [], files: [] };
+    const found = contents(item, topic);
+    const cooked = found.cooked || { blocks: [], files: [] };
     const files = [
-      ...(item.previewUrl ? [{ name: `${item.title}${item.format ? ` · ${item.format}` : ""}`, href: item.previewUrl, model: true }] : []),
-      ...cooked.files,
+      ...found.models.map((model) => ({ name: `${model.name || item.title}${model.format ? ` · ${model.format}` : ""}`, href: model.href, model: true, download: found.attachmentFor(model)?.href || null })),
+      ...found.downloads,
     ];
     const created = topic?.created_at ? new Date(topic.created_at) : null;
     const likes = topic?.like_count ?? item.likes;
@@ -210,10 +245,13 @@ export default function createResourceDetail({ t }) {
         item.tags.length ? el("div", { class: "mlcv-rd__tags" }, item.tags.map((tag) => el("a", { href: `/tag/${encodeURIComponent(tag)}`, text: `#${tag}` }))) : null,
         files.length ? el("div", { class: "mlcv-rd__files" }, [
           el("div", { class: "mlcv-rd__files-head", text: `${t("files", "Files")} · ${files.length}` }),
-          ...files.map((file) => el("a", { class: "mlcv-rd__file", href: file.href, target: file.model ? null : "_blank", rel: file.model ? null : "noopener" }, [
-            icon(file.model ? "rotate" : "file", "mlcv-rd__file-icon"),
-            el("span", { class: "mlcv-rd__file-name", text: file.name }),
-            icon(file.model ? "next" : "download", "mlcv-rd__icon"),
+          ...files.map((file) => el("div", { class: "mlcv-rd__file" }, [
+            el("a", { class: "mlcv-rd__file-main", href: file.href, target: file.model ? null : "_blank", rel: file.model ? null : "noopener" }, [
+              icon(file.model ? "rotate" : "file", "mlcv-rd__file-icon"),
+              el("span", { class: "mlcv-rd__file-name", text: file.name }),
+              file.model ? icon("next", "mlcv-rd__icon") : icon("download", "mlcv-rd__icon"),
+            ]),
+            file.model && file.download ? el("a", { class: "mlcv-rd__file-download", href: file.download, target: "_blank", rel: "noopener", "aria-label": `${t("download", "Download")}: ${file.name}`, title: t("download", "Download") }, [icon("download", "mlcv-rd__icon")]) : null,
           ])),
         ]) : null,
         posts.length > 1 ? el("div", { class: "mlcv-rd__replies" }, posts.slice(1, 1 + REPLY_LIMIT).map((post) => {
@@ -242,7 +280,7 @@ export default function createResourceDetail({ t }) {
     );
     // links inside the pop-up leave it: close first so the page underneath is clean
     side.querySelectorAll("a[href]:not([target])").forEach((link) => link.addEventListener("click", close));
-    layer.querySelectorAll(".mlcv-rd__open-viewer, .mlcv-rd__file[href*='/viewer?']").forEach((link) => link.addEventListener("click", () => {
+    side.querySelectorAll(".mlcv-rd__file-main[href^='/viewer?']").forEach((link) => link.addEventListener("click", () => {
       rememberPreview({ href: new URL(link.getAttribute("href"), location.origin).href, topic_url: item.url, title: item.title, username: item.username });
       close();
     }, { once: true }));

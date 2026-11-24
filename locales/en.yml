@@ -79,6 +79,7 @@ en:
     likesCount: "likes"
     repliesCount: "replies"
     resourcesLoading: "Loading…"
+    download: "Download"
     previewDrawing: "Preview drawing"
     drawingLibrary: "Drawing library"
     open: "3D Viewer"
