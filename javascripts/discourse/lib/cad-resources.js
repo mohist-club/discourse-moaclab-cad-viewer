@@ -14,6 +14,8 @@
 // formats fill in after.
 import { getJSON, loadModelTopics } from "./cad-library-source";
 import { rememberPreview } from "./cad-library-navigation";
+import createResourceDetail from "./cad-resources-detail";
+import { el, icon, ICONS } from "./cad-resources-dom";
 import {
   applyModels, filterResources, listsToResources, readState, resourceContributors,
   resourceStats, textTileColor, writeState,
@@ -26,35 +28,6 @@ const STORE_MS = 24 * 60 * 60 * 1000;
 const STORE_KEY = "moaclab-cad-resources-v2";
 const SCROLL_KEY = "moaclab-cad-resources-scroll-v1";
 const SKELETON_TILES = 8;
-
-const ICONS = {
-  cube: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg>',
-  grid: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>',
-  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg>',
-  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
-  other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>',
-  heart: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-8-4.7-8-10.6A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.9c0 5.9-8 10.6-8 10.6z"/></svg>',
-  reply: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 12a8 8 0 1 1 3.6 6.7L4 20l1.3-3.6A8 8 0 0 1 4 12z"/></svg>',
-  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
-  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
-  pin: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.4 2.6a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4l-1.8 1.8a1 1 0 0 1-1.1.2l-3.3 3.3.3 3.4a1 1 0 0 1-.3.8l-1.2 1.2a1 1 0 0 1-1.4 0l-3.2-3.2-4.7 4.7-1.4-1.4 4.7-4.7-3.2-3.2a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 .8-.3l3.4.3 3.3-3.3a1 1 0 0 1 .2-1.1z"/></svg>',
-  rotate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="4"/><path d="M17 6.5 19 8l-2 1.6"/></svg>',
-};
-
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(attrs)) {
-    if (value === null || value === undefined || value === false) { continue; }
-    if (key === "text") { node.textContent = value; }
-    else if (key === "html") { node.innerHTML = value; } // only the static ICONS above
-    else if (key.startsWith("on")) { node.addEventListener(key.slice(2), value); }
-    else { node.setAttribute(key, value === true ? "" : String(value)); }
-  }
-  for (const child of [].concat(children)) { if (child) { node.append(child); } }
-  return node;
-}
-
-const icon = (name, className = "mlcv-res__icon") => el("span", { class: className, html: ICONS[name] });
 
 function readStore(categoryId) {
   try {
@@ -77,6 +50,8 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
   let loading = null; // { at, promise }
   let failed = false;
   let restoreScroll = true;
+  const detail = createResourceDetail({ t });
+  const wide = () => window.matchMedia?.("(min-width: 768px)").matches ?? true;
 
   // ---- data -----------------------------------------------------------------
   // Category, first topic page and model list in parallel; the first page is
@@ -211,7 +186,21 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
 
   function tile(item) {
     const label = [item.title, item.format, item.username && `@${item.username}`].filter(Boolean).join(" · ");
-    const link = el("a", { class: "mlcv-res__link", href: item.url, "aria-label": label, onclick: rememberScroll });
+    const link = el("a", {
+      class: "mlcv-res__link",
+      href: item.url,
+      "aria-label": label,
+      onclick: (event) => {
+        // desktop: Instagram's post pop-up; modified clicks and phones open the topic
+        if (wide() && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+          event.preventDefault();
+          const shown = filterResources(data.items, state);
+          detail.open(shown, Math.max(0, shown.findIndex((entry) => entry.id === item.id)), event.currentTarget);
+          return;
+        }
+        rememberScroll();
+      },
+    });
     if (item.image) {
       link.append(el("img", { src: item.image, alt: "", loading: "lazy", decoding: "async" }));
     } else {
@@ -285,21 +274,27 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
   // ---- skeleton ---------------------------------------------------------------
   function build() {
     const tabs = [
-      ["all", "grid", t("tabAll", "All")],
-      ["share", "share", t("tabShare", "Shared")],
-      ["download", "download", t("tabDownload", "Downloads")],
-      ["other", "other", t("tabOther", "Other")],
+      ["all", "tabAll", t("tabAll", "All")],
+      ["share", "tabShare", t("tabShare", "Shared")],
+      ["download", "tabDownload", t("tabDownload", "Downloads")],
+      ["other", "tabOther", t("tabOther", "Other")],
     ];
     const picker = filePicker();
     return el("section", { class: "mlcv-res", "aria-label": t("resources", "Resources") }, [
       el("header", { class: "mlcv-res__head" }, [
-        el("div", { class: "mlcv-res__avatar" }, [el("span", { html: ICONS.cube })]),
+        el("div", { class: "mlcv-res__avatar" }, [
+          el("span", { class: "mlcv-res__ring", "aria-hidden": "true" }),
+          el("span", { class: "mlcv-res__avatar-core" }, [el("span", { class: "mlcv-res__cube", html: ICONS.cubeRainbow })]),
+        ]),
         el("div", { class: "mlcv-res__info" }),
       ]),
       el("div", { class: "mlcv-res__actions" }, [
         el("a", { class: "mlcv-res__btn mlcv-res__btn--primary", href: `/new-topic?category_id=${categoryId}`, text: t("publishResource", "Publish") }),
-        el("button", { type: "button", class: "mlcv-res__btn", onclick: () => picker.click(), text: t("previewLocalFile", "Preview") }),
-        picker,
+        // a <label> opens its file input natively, in every browser
+        el("label", { class: "mlcv-res__btn", tabindex: "0", role: "button", onkeydown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); picker.click(); } } }, [
+          el("span", { text: t("previewLocalFile", "Preview") }),
+          picker,
+        ]),
       ]),
       el("div", { class: "mlcv-res__tabs", role: "tablist", "aria-label": t("resourceTypes", "Resource types") },
         tabs.map(([id, iconName, label]) => el("button", {
@@ -334,6 +329,7 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
   }
 
   function unmount() {
+    detail.close();
     root?.remove();
     root = null;
     document.body.classList.remove(BODY_CLASS);

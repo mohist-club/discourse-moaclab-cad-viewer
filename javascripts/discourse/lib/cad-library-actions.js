@@ -15,21 +15,31 @@ export function takePendingLocalFile() {
 }
 
 export default function installLibraryActions(api, t) {
+  // /viewer → /viewer?mode=preview only changes the query, which the route
+  // can treat as no transition at all. If the URL has not moved shortly
+  // after, move it here: the initializer listens to popstate and opens the
+  // viewer with the pending file (no reload, so the file is kept).
   function goToPreview() {
+    const arrived = () => new URLSearchParams(location.search).get("mode") === "preview";
     try {
-      api.container.lookup("service:router").transitionTo(PREVIEW_URL);
-    } catch {
-      pendingFile = null;
-      window.location.assign(PREVIEW_URL);
-    }
+      api.container.lookup("service:router").transitionTo(PREVIEW_URL)?.catch?.(() => {});
+    } catch { /* handled below */ }
+    setTimeout(() => {
+      if (arrived() || !pendingFile) { return; }
+      history.pushState(history.state, "", PREVIEW_URL);
+      window.dispatchEvent(new PopStateEvent("popstate", { state: history.state }));
+    }, 250);
   }
 
-  // A hidden file input whose chosen file opens the viewer.
+  // A file input whose chosen file opens the viewer. It is visually hidden
+  // rather than display:none, so it can sit inside a <label> that opens it
+  // natively (Safari / iOS ignore click() on some hidden inputs).
   function filePicker() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ACCEPT;
-    input.hidden = true;
+    input.className = "mlcv-file-input";
+    input.tabIndex = -1;
     input.addEventListener("change", () => {
       const file = input.files?.[0];
       input.value = "";
