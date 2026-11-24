@@ -14,4 +14,4 @@ library_category_id:
 resources_page:
   default: true
   type: bool
-  description: "Show /viewer as an Instagram-style resources page for the library category: profile header, format and tag highlights, model / drawing / saved tabs, search and sort, and a 3-column grid with like, reply and view counts. Needs library_category_id. Off: the plugin's drawing list."
+  description: "Show /viewer as an Instagram-style profile of the library category: header with counts and contributors, Publish and Preview buttons, All / Shared / Downloads / Other tabs, and a 4-column grid with like, reply and view counts. Needs library_category_id. Off: the plugin's drawing list."

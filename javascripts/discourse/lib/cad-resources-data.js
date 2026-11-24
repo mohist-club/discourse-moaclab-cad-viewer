@@ -4,8 +4,12 @@
 
 export const MODEL_FORMATS = ["STEP", "STP", "IGES", "IGS", "GLB", "GLTF", "STL", "OBJ"];
 export const DRAWING_FORMATS = ["DXF", "DWG"];
-export const TABS = ["all", "model", "drawing", "saved"];
-export const SORTS = ["latest", "likes", "replies", "views"];
+export const TABS = ["all", "share", "download", "other"];
+
+// Tags that put a topic in a tab on purpose; other topics are sorted by what
+// they contain (see resourceKind).
+const SHARE_TAGS = ["分享", "作品", "作品分享", "share", "showcase"];
+const DOWNLOAD_TAGS = ["下载", "资源下载", "图纸", "模型", "download", "files"];
 
 export function normalizeFormat(value) {
   const format = String(value || "").trim().replace(/^\./, "").toUpperCase();
@@ -16,8 +20,19 @@ export function tagName(tag) {
   return String(typeof tag === "string" ? tag : tag?.name || "").trim();
 }
 
+export function avatarUrl(template, size) {
+  const value = String(template || "");
+  return value ? value.replace("{size}", String(size)) : "";
+}
+
+function decodeEntities(text) {
+  return String(text)
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
 // One topic from a topic list as a resource tile.
-export function topicToResource(topic, users, models) {
+export function topicToResource(topic, users, models = new Map()) {
   const model = models.get(topic.id);
   const poster = users.get(topic.posters?.[0]?.user_id);
   return {
@@ -38,17 +53,6 @@ export function topicToResource(topic, users, models) {
   };
 }
 
-export function avatarUrl(template, size) {
-  const value = String(template || "");
-  return value ? value.replace("{size}", String(size)) : "";
-}
-
-function decodeEntities(text) {
-  return String(text)
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-}
-
 // Every page of a category topic list merged: resources in list order, the
 // category's about topic left out, each topic once.
 export function listsToResources(pages, { aboutTopicId, categoryId, models }) {
@@ -66,6 +70,34 @@ export function listsToResources(pages, { aboutTopicId, categoryId, models }) {
   }
   out.forEach((item, index) => { item.order = index; });
   return out;
+}
+
+// The model list (/moaclab-cad/drawings.json) usually arrives after the
+// topics: fill in format, preview and image without reordering anything.
+export function applyModels(items, models) {
+  if (!models?.size) { return items; }
+  return items.map((item) => {
+    const model = models.get(item.id);
+    if (!model) { return item; }
+    return {
+      ...item,
+      format: normalizeFormat(model.format) || item.format,
+      previewUrl: model.preview_url || item.previewUrl,
+      image: item.image || model.image_url || "",
+    };
+  });
+}
+
+// share | download | other. A "分享" / "下载" style tag decides; without one,
+// a topic with a model or drawing file is a download, one with only a
+// picture is a share, anything else is other.
+export function resourceKind(item) {
+  const tags = item.tags.map((tag) => tag.toLowerCase());
+  if (tags.some((tag) => DOWNLOAD_TAGS.includes(tag))) { return "download"; }
+  if (tags.some((tag) => SHARE_TAGS.includes(tag))) { return "share"; }
+  if (item.format) { return "download"; }
+  if (item.image) { return "share"; }
+  return "other";
 }
 
 // Header numbers: resources, distinct formats, distinct authors.
@@ -89,61 +121,20 @@ export function resourceContributors(items) {
   return [...byName.values()].sort((a, b) => b.count - a.count || a.username.localeCompare(b.username));
 }
 
-// Highlight circles: formats first (most used), then the most used tags.
-export function resourceHighlights(items, max = 8) {
-  const count = (values) => {
-    const counts = new Map();
-    values.forEach((value) => counts.set(value, (counts.get(value) || 0) + 1));
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  };
-  const formats = count(items.map((item) => item.format).filter(Boolean))
-    .map(([value]) => ({ key: `fmt:${value}`, label: value, kind: "format" }));
-  const tags = count(items.flatMap((item) => item.tags))
-    .map(([value]) => ({ key: `tag:${value}`, label: value, kind: "tag" }));
-  return [...formats, ...tags].slice(0, max);
+// The tiles of a tab: pinned topics first, then list order.
+export function filterResources(items, { tab = "all" } = {}) {
+  const out = tab === "all" ? items : items.filter((item) => resourceKind(item) === tab);
+  return [...out].sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.order - b.order);
 }
 
-// The visible tiles for a tab, highlight filter, search result and sort.
-export function filterResources(items, { tab = "all", filter = "", searchIds = null, savedIds = null, sort = "latest" } = {}) {
-  let out = items;
-  if (tab === "model") { out = out.filter((item) => MODEL_FORMATS.includes(item.format)); }
-  if (tab === "drawing") { out = out.filter((item) => DRAWING_FORMATS.includes(item.format)); }
-  if (tab === "saved") { out = savedIds ? out.filter((item) => savedIds.has(item.id)) : []; }
-  if (filter.startsWith("fmt:")) { out = out.filter((item) => item.format === filter.slice(4)); }
-  if (filter.startsWith("tag:")) { out = out.filter((item) => item.tags.includes(filter.slice(4))); }
-  if (searchIds) {
-    const rank = new Map(searchIds.map((id, index) => [id, index]));
-    out = out.filter((item) => rank.has(item.id));
-    if (sort === "latest") { return out.sort((a, b) => rank.get(a.id) - rank.get(b.id)); }
-  }
-  const key = { likes: "likes", replies: "replies", views: "views" }[sort];
-  const pinFirst = (a, b) => (sort === "latest" ? Number(b.pinned) - Number(a.pinned) : 0);
-  return [...out].sort((a, b) => pinFirst(a, b) || (key ? b[key] - a[key] : 0) || a.order - b.order);
-}
-
-// Page state kept in the URL (?tab=&f=&q=&sort=), so back and reload return
-// to the same view. Unknown values fall back to the defaults.
+// The tab is kept in the URL (?tab=), so back and reload return to it.
 export function readState(search) {
-  const params = new URLSearchParams(search);
-  const tab = params.get("tab");
-  const sort = params.get("sort");
-  const filter = params.get("f") || "";
-  return {
-    tab: TABS.includes(tab) ? tab : "all",
-    sort: SORTS.includes(sort) ? sort : "latest",
-    filter: /^(fmt|tag):.{1,60}$/.test(filter) ? filter : "",
-    query: (params.get("q") || "").slice(0, 200),
-  };
+  const tab = new URLSearchParams(search).get("tab");
+  return { tab: TABS.includes(tab) ? tab : "all" };
 }
 
 export function writeState(state) {
-  const params = new URLSearchParams();
-  if (state.tab !== "all") { params.set("tab", state.tab); }
-  if (state.filter) { params.set("f", state.filter); }
-  if (state.query) { params.set("q", state.query); }
-  if (state.sort !== "latest") { params.set("sort", state.sort); }
-  const text = params.toString();
-  return text ? `?${text}` : "";
+  return state.tab && state.tab !== "all" ? `?${new URLSearchParams({ tab: state.tab })}` : "";
 }
 
 // Soft background for a tile without an image, stable per topic.
