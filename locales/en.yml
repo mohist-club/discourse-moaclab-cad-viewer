@@ -65,8 +65,6 @@ en:
     resourcesSubtitle: "Drawings · models · tool files"
     contributorsInclude: "Contributors include"
     listSeparator: ", "
-    previousResource: "Previous"
-    nextResource: "Next"
     openInViewer: "Open in viewer"
     readMore: "Read more"
     files: "Files"

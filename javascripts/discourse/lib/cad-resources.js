@@ -194,8 +194,7 @@ export default function installResourcePage(api, { t, categoryId, filePicker }) 
         // desktop: Instagram's post pop-up; modified clicks and phones open the topic
         if (wide() && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
           event.preventDefault();
-          const shown = filterResources(data.items, state);
-          detail.open(shown, Math.max(0, shown.findIndex((entry) => entry.id === item.id)), event.currentTarget);
+          detail.open(item, event.currentTarget);
           return;
         }
         rememberScroll();
