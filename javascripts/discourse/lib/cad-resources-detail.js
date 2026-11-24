@@ -2,7 +2,8 @@
 // the left (the 3D preview for a topic with a model, else its image, else
 // its title on a soft colour), the post on the right (author, title, text,
 // tags, files, replies) and an action row at the bottom. Opened from a tile
-// on desktop; phones keep opening the topic page.
+// on desktop; phones keep opening the topic page. One resource per opening:
+// no previous / next.
 //
 // Text, files and replies come from /t/<id>.json. The posts' cooked HTML is
 // read with DOMParser (an inert document) and only text and link targets are
@@ -68,18 +69,19 @@ export function readCooked(cooked) {
 
 export default function createResourceDetail({ t }) {
   let layer = null;
-  let list = [];
-  let index = 0;
+  let current = null;
   let returnFocus = null;
   let token = 0;
 
-  function open(items, at, opener) {
-    list = items;
-    index = at;
+  function open(item, opener) {
+    current = item;
     returnFocus = opener || document.activeElement;
     if (!layer) { build(); }
     document.body.append(layer);
     document.documentElement.classList.add("mlcv-rd-open");
+    // on the document, so Esc works wherever focus ended up (a re-rendered
+    // control, the page behind); the 3D iframe keeps its own keys
+    document.addEventListener("keydown", onKey, true);
     show();
     layer.querySelector(".mlcv-rd__close").focus();
   }
@@ -89,21 +91,13 @@ export default function createResourceDetail({ t }) {
     token++;
     layer.querySelector(".mlcv-rd__media").replaceChildren(); // stops a running 3D preview
     layer.remove();
+    document.removeEventListener("keydown", onKey, true);
     document.documentElement.classList.remove("mlcv-rd-open");
     returnFocus?.focus?.();
   }
 
-  function step(delta) {
-    const next = index + delta;
-    if (next < 0 || next >= list.length) { return; }
-    index = next;
-    show();
-  }
-
   function onKey(event) {
     if (event.key === "Escape") { event.preventDefault(); close(); }
-    else if (event.key === "ArrowLeft" && !event.target.closest?.("input, textarea")) { step(-1); }
-    else if (event.key === "ArrowRight" && !event.target.closest?.("input, textarea")) { step(1); }
     else if (event.key === "Tab") { trapFocus(event); }
   }
 
@@ -117,10 +111,8 @@ export default function createResourceDetail({ t }) {
   }
 
   function build() {
-    layer = el("div", { class: "mlcv-rd", onkeydown: onKey, onclick: (event) => { if (event.target === layer) { close(); } } }, [
+    layer = el("div", { class: "mlcv-rd", onclick: (event) => { if (event.target === layer) { close(); } } }, [
       el("button", { type: "button", class: "mlcv-rd__close", "aria-label": t("close", "Close"), onclick: close }, [icon("close", "mlcv-rd__icon")]),
-      el("button", { type: "button", class: "mlcv-rd__nav mlcv-rd__nav--prev", "aria-label": t("previousResource", "Previous"), onclick: () => step(-1) }, [icon("prev", "mlcv-rd__icon")]),
-      el("button", { type: "button", class: "mlcv-rd__nav mlcv-rd__nav--next", "aria-label": t("nextResource", "Next"), onclick: () => step(1) }, [icon("next", "mlcv-rd__icon")]),
       el("div", { class: "mlcv-rd__dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "mlcv-rd-title" }, [
         el("div", { class: "mlcv-rd__media" }),
         el("aside", { class: "mlcv-rd__side" }),
@@ -129,10 +121,8 @@ export default function createResourceDetail({ t }) {
   }
 
   function show() {
-    const item = list[index];
+    const item = current;
     const mine = ++token;
-    layer.querySelector(".mlcv-rd__nav--prev").hidden = index <= 0;
-    layer.querySelector(".mlcv-rd__nav--next").hidden = index >= list.length - 1;
     renderMedia(item, null);
     renderSide(item, null);
     loadTopic(item.id).then((topic) => {
@@ -181,16 +171,22 @@ export default function createResourceDetail({ t }) {
       media.classList.add("mlcv-rd__media--model");
       media.replaceChildren(
         el("iframe", { src: src.pathname + src.search, title: `${t("preview3d", "3D preview")}: ${model.name || item.title}`, allowfullscreen: true }),
-        models.length > 1 ? el("div", { class: "mlcv-rd__models", role: "tablist", "aria-label": t("files", "Files") }, models.map((entry, at) => el("button", {
-          type: "button",
-          role: "tab",
-          class: `mlcv-rd__model${entry === model ? " is-active" : ""}`,
-          "aria-selected": entry === model ? "true" : "false",
-          title: entry.name || item.title,
-          text: entry.format || String(at + 1),
-          onclick: () => renderMedia(item, topic, at),
-        }))) : null,
-        el("a", { class: "mlcv-rd__open-viewer", href: model.href }, [icon("rotate", "mlcv-rd__icon"), el("span", { text: t("openInViewer", "Open in viewer") })]),
+        // top-left, clear of the viewer's own toolbar at the bottom
+        el("div", { class: "mlcv-rd__media-bar" }, [
+          models.length > 1 ? el("div", { class: "mlcv-rd__models", role: "tablist", "aria-label": t("files", "Files") }, models.map((entry, at) => el("button", {
+            type: "button",
+            role: "tab",
+            class: `mlcv-rd__model${entry === model ? " is-active" : ""}`,
+            "aria-selected": entry === model ? "true" : "false",
+            title: entry.name || item.title,
+            text: entry.format || String(at + 1),
+            onclick: () => {
+              renderMedia(item, topic, at);
+              layer.querySelector(".mlcv-rd__model.is-active")?.focus();
+            },
+          }))) : null,
+          el("a", { class: "mlcv-rd__open-viewer", href: model.href }, [icon("rotate", "mlcv-rd__icon"), el("span", { text: t("openInViewer", "Open in viewer") })]),
+        ]),
       );
       media.querySelector(".mlcv-rd__open-viewer").addEventListener("click", () => {
         rememberPreview({ href: new URL(model.href, location.origin).href, topic_url: item.url, title: item.title, username: item.username });

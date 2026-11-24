@@ -11,6 +11,8 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 
 插件不在或版本不匹配时，组件无法加载模型。
 
+嵌入模式（`embed=1`，帖子里的模型和资源详情弹窗）下只显示查看器本身：`body` 下其他元素（Discourse 页面、主题的底部导航或顶栏）全部隐藏。
+
 `/viewer` 不带参数时的图纸列表由插件渲染，组件只改它的外观和入口：
 
 - 数据来源：设置 `library_category_id` 不为 0 时，组件用 `api.modifyClass("component:moaclab-cad-library")` 改写列表的 `load()`，改为取该栏目的全部话题（排除栏目说明帖），搜索走 `/search.json` 并限定栏目；带模型的话题仍从 `/moaclab-cad/drawings.json` 取格式标签（`cad-library-source.js`）。
@@ -24,7 +26,7 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 - 只有图标的标签页：全部、分享、下载、其他。话题带「分享」「下载」一类标签时按标签归类；否则有模型或图纸文件的算下载，只有图片的算分享，其余算其他（`resourceKind`）。
 - 4 列（窄屏 3 列）3:4 网格：有图的话题显示首图，没有图的显示为彩色文字卡片；置顶话题排在前面并带图钉；右上角格式标签；悬停显示点赞、回复、浏览和作者，带模型的话题另有「3D 预览」。
 - 头像：Instagram 彩虹圈缓慢旋转，中间立方体带渐变描边并轻微转动；系统开启「减少动态效果」时静止。
-- 详情弹窗（`cad-resources-detail.js`，桌面点卡片打开；手机和带修饰键的点击仍打开话题）：左边优先是图纸 3D 预览（`/viewer?…&embed=1`；模型来自插件的模型列表，没有时取首帖里的 `[moaclab-3d]` 短代码和 STEP / DXF 等 CAD 附件，多个模型可在左上角切换），没有模型才显示首图或文字底色，右边是作者、标题、正文、标签、文件（模型 + 附件）、前 6 条回复，底部点赞 / 回复 / 收藏跳到话题里用 Discourse 原生功能，分享为复制链接。正文、文件、回复来自 `/t/<id>.json`，帖子 HTML 只用 DOMParser 读取文字和链接，不插入页面。← / → 切换，Esc 关闭。
+- 详情弹窗（`cad-resources-detail.js`，桌面点卡片打开；手机和带修饰键的点击仍打开话题）：左边优先是图纸 3D 预览（`/viewer?…&embed=1`；模型来自插件的模型列表，没有时取首帖里的 `[moaclab-3d]` 短代码和 STEP / DXF 等 CAD 附件，多个模型可在左上角切换），没有模型才显示首图或文字底色，右边是作者、标题、正文、标签、文件（模型 + 附件）、前 6 条回复，底部点赞 / 回复 / 收藏跳到话题里用 Discourse 原生功能，分享为复制链接。正文、文件、回复来自 `/t/<id>.json`，帖子 HTML 只用 DOMParser 读取文字和链接，不插入页面。一次只看一个资源（没有上一个 / 下一个），Esc 或点遮罩关闭。
 - 「预览」按钮是包住文件输入框的 `<label>`；选好文件后若路由没有切到 `/viewer?mode=preview`，`cad-library-actions.js` 直接改地址并触发 popstate，文件不会丢。
 - 加载：骨架（页头、按钮、标签页、灰色占位）立即画出；上次的结果存在 localStorage（24 小时），再次打开时直接显示再后台刷新；栏目信息、第一页话题和模型列表同时请求，第一页一到就显示，后面的页和格式标签随后补上。
 - 数据只用 Discourse 公开 JSON（`/c/<id>/show.json`、`/c/<slug>/<id>/l/latest.json` 全部页、`/moaclab-cad/drawings.json`），当前标签页写在网址参数 `tab` 里。
