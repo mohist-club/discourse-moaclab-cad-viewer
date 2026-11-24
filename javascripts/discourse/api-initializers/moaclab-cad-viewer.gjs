@@ -8,6 +8,7 @@ import { installCadFileSnapshot, readUploadResponse, uploadErrorHint } from "../
 import rememberDrawingLibrary, { drawingContext } from "../lib/cad-library-navigation";
 import installLibraryActions, { takePendingLocalFile } from "../lib/cad-library-actions";
 import installLibrarySource from "../lib/cad-library-source";
+import { meshesToGlb } from "../lib/cad-glb-export";
 import installResourcePage from "../lib/cad-resources";
 
 export default apiInitializer((api) => {
@@ -318,14 +319,6 @@ export default apiInitializer((api) => {
     return `[moaclab-3d upload="${locator}" type="${ext}" title="${title}"]`;
   }
 
-  function shortcodeForPersistentModel(model, file) {
-    const ext = (model?.ext || fileExt(file?.name || model?.name || "")).toLowerCase();
-    if (!/^[a-f0-9]{16}$/.test(model?.id || "")) throw new Error("model response did not include a persistent id");
-    if (!/^(step|stp|igs|iges|dxf|dwg|glb|gltf|stl|obj)$/.test(ext)) throw new Error("model response did not include a supported extension");
-    const title = (file?.name || model?.name || `Moaclab CAD.${ext}`).replace(/"/g, "'");
-    return `[moaclab-3d id="${model.id}" ext="${ext}" title="${title}"]`;
-  }
-
   function imageMarkdownForUpload(upload, file) {
     const locator = concealedUploadLocator(upload);
     if (!locator) return "";
@@ -358,21 +351,6 @@ export default apiInitializer((api) => {
       body: form,
     });
     return await readUploadResponse(response);
-  }
-
-  async function uploadPersistentModel(file) {
-    const form = new FormData();
-    form.append("model", file, file.name);
-    form.append("name", file.name);
-    const response = await fetch("/moaclab-cad/models.json", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: csrfToken() ? { "X-CSRF-Token": csrfToken() } : undefined,
-      body: form,
-    });
-    const json = await readUploadResponse(response);
-    if (!json?.ok) throw new Error(json?.error || "model upload failed");
-    return json;
   }
 
   function blobFromCanvas(canvas, type = "image/png", quality) {
@@ -414,11 +392,11 @@ export default apiInitializer((api) => {
     }
   }
 
-  async function captureCurrentPreview(file) {
+  async function captureCurrentPreview(file, { width = 1280, height = 720 } = {}) {
     const page = document.getElementById(`${NS}-page`);
     const target = document.createElement("canvas");
-    target.width = 1280;
-    target.height = 720;
+    target.width = width;
+    target.height = height;
     const ctx = target.getContext("2d");
     ctx.fillStyle = "#edf0f4";
     ctx.fillRect(0, 0, target.width, target.height);
@@ -526,17 +504,31 @@ export default apiInitializer((api) => {
     state.uploading = true;
     setShareButtonState(t("posting", "Uploading…"), true);
     try {
-      const model = await uploadPersistentModel(state.currentFile);
-      const shortcode = shortcodeForPersistentModel(model, state.currentFile);
-      let body = shortcode;
+      // Share, not download: the source file never leaves the browser.
+      // A 3D model is posted as its display mesh (GLB, triangles only); a 2D
+      // drawing as a high-resolution picture.
+      const page = document.getElementById(`${NS}-page`);
+      const drawing2d = Boolean(page?.querySelector(".mlcv-dxf-layer svg"));
+      let body = "";
+      if (!drawing2d) {
+        const baseName = state.currentFile.name.replace(/\.[^.]+$/, "") || "moaclab-cad";
+        state.instance.scene?.updateMatrixWorld?.(true);
+        const glb = meshesToGlb(state.instance.meshes, { name: baseName });
+        const meshFile = new File([glb], `${baseName}.glb`, { type: "model/gltf-binary" });
+        const meshUpload = await uploadCurrentFile(meshFile);
+        body = shortcodeForUpload(meshUpload, meshFile);
+        const keep = retentionMarkdownForUpload(meshUpload, meshFile);
+        if (keep) body = `${body}\n\n${keep}`;
+      }
       try {
         setShareButtonState(t("capturingPreview", "Capturing…"), true);
-        const previewFile = await captureCurrentPreview(state.currentFile);
+        const previewFile = await captureCurrentPreview(state.currentFile, drawing2d ? { width: 2560, height: 1440 } : undefined);
         const previewUpload = await uploadCurrentFile(previewFile);
         const previewMarkdown = imageMarkdownForUpload(previewUpload, state.currentFile);
-        if (previewMarkdown) body = `${previewMarkdown}\n\n${body}`;
+        if (previewMarkdown) body = body ? `${previewMarkdown}\n\n${body}` : previewMarkdown;
       } catch (previewError) {
-        console.warn("Moaclab CAD Viewer preview capture failed; continuing with shortcode only", previewError);
+        if (drawing2d) throw previewError; // the picture is all a 2D share has
+        console.warn("Moaclab CAD Viewer preview capture failed; continuing with the 3D view only", previewError);
       }
       await openComposerWithShortcode(body, state.currentFile);
       setShareButtonState(t("shareUpload", "Upload & share"), false);
@@ -557,6 +549,7 @@ export default apiInitializer((api) => {
     button.className = "mlcv-post";
     button.hidden = true;
     button.textContent = t("shareUpload", "Upload & share");
+    button.title = t("shareHint", "Shares a view-only 3D mesh (2D drawings: a picture). The source file stays on your computer.");
     button.addEventListener("click", composeCurrentFile);
     headerFile.appendChild(button);
     state.shareButton = button;

@@ -78,6 +78,7 @@ zh_CN:
     repliesCount: "条回复"
     resourcesLoading: "加载中…"
     download: "下载"
+    shareHint: "只分享用于查看的 3D 网格（2D 图纸为高清图片），源文件留在你的电脑上，不会上传。"
     previewDrawing: "图纸预览"
     drawingLibrary: "图纸列表"
     open: "3D 查看器"

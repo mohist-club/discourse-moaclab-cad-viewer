@@ -78,6 +78,7 @@ en:
     repliesCount: "replies"
     resourcesLoading: "Loading…"
     download: "Download"
+    shareHint: "Shares a view-only 3D mesh (2D drawings: a picture). The source file stays on your computer."
     previewDrawing: "Preview drawing"
     drawingLibrary: "Drawing library"
     open: "3D Viewer"
