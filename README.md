@@ -18,7 +18,7 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 - 隐藏格式筛选和插件的两个头部链接，换成一个「图纸预览」按钮：选择本地文件后直接在查看器里打开（`cad-library-actions.js`）。
 - 查看器里打开本地文件后显示「上传分享」，上传模型并打开带短代码的发帖框。
 
-设置 `resources_page` 打开（默认）时，`/viewer` 改为「资源」主页（`cad-resources.js`、`cad-resources-data.js`），插件的列表仍在页面里但被隐藏：
+设置 `resources_page` 打开（默认）时，`/viewer` 改为「资源」主页（`cad-resources.js`、`cad-resources-data.js`），插件的列表若有则仍在页面里但被隐藏；插件 1.5 秒内没有渲染列表时，资源主页直接显示在 `#main-outlet` 里，`/viewer` 不再依赖插件列表才能显示：
 
 - 页头：栏目名、简介、栏目说明链接，「发布资源」（`/new-topic?category_id=<栏目>`）和「预览本地文件」，资源数 / 格式数 / 贡献者数。
 - 精选圆圈：出现过的模型格式和最常用的标签，点击筛选。标签页：全部、3D 模型、2D 图纸、已收藏（登录用户的书签）。搜索（`/search.json`，限定栏目）和排序（最近活动、最多点赞、最多回复、最多浏览）。
