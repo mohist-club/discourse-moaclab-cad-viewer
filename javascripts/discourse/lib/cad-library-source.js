@@ -7,14 +7,14 @@
 // `nextBefore` is set and uses `loading` / `failed` for the status line.
 const DRAWING_PAGES = 10;
 
-async function getJSON(url) {
+export async function getJSON(url) {
   const response = await fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } });
   if (!response.ok) { throw new Error(`${url}: HTTP ${response.status}`); }
   return response.json();
 }
 
 // Topics that contain a model, by topic id, for the format badge.
-async function loadModelTopics() {
+export async function loadModelTopics() {
   const byTopic = new Map();
   let before = null;
   for (let page = 0; page < DRAWING_PAGES; page++) {
