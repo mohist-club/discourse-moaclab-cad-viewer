@@ -18,7 +18,10 @@ Discourse 主题组件，在 moaclab.com 内查看 STEP、IGES、DXF、DWG、GLB
 - 数据来源：设置 `library_category_id` 不为 0 时，组件用 `api.modifyClass("component:moaclab-cad-library")` 改写列表的 `load()`，改为取该栏目的全部话题（排除栏目说明帖），搜索走 `/search.json` 并限定栏目；带模型的话题仍从 `/moaclab-cad/drawings.json` 取格式标签（`cad-library-source.js`）。
 - 样式按 Instagram 主题的发现页网格重排，颜色用该主题的 `--ig-*` 变量，其他主题下退回 Discourse 颜色。
 - 隐藏格式筛选和插件的两个头部链接，换成一个「图纸预览」按钮：选择本地文件后直接在查看器里打开（`cad-library-actions.js`）。
-- 查看器里打开本地文件后显示「上传分享」，上传模型并打开带短代码的发帖框。
+- 查看器里打开本地文件后显示「上传分享」。**源文件不离开浏览器**：3D 模型用 `cad-glb-export.js` 把当前显示的网格写成 GLB（只有三角面、法线和颜色，没有 B-rep 和原始字节），作为普通附件上传，帖子里是 `[moaclab-3d upload="upload://…" type="glb"]` 加预览图；2D 图纸（DXF / DWG）只上传 2560×1440 的预览图。需要站点设置 `authorized_extensions` 包含 `glb`。
+- 可选私存原件（0.9.0，设置 `private_source_upload`，默认关闭，需要插件 `discourse-moaclab-tools` 1.7.0）：打开后，「上传分享」旁边会出现「同时私存源文件」，作者自己决定勾不勾。勾选后原件上传到插件的 `POST /moaclab-cad/sources`，存在 `public/` 以外，帖子末尾附一条 `[moaclab-cad-private:文件名](/moaclab-cad/sources/<id>)`。只有插件设置 `moaclab_cad_source_download_groups`（默认管理员）里的人能看到「下载源文件」，其他人看不到这条链接，直接访问也会被服务端拒绝（403）。
+- 本地「预览」不向服务器发送任何内容；只有点「上传分享」才上传上面的网格和图片。
+- 旧版本（≤ 0.7.5）「上传分享」把源文件存到插件的 `/moaclab-cad/models/<id>`，任何人可下载；组件不再使用这个上传接口，读取旧帖子时仍会用到。
 
 设置 `resources_page` 打开（默认）时，`/viewer` 改为「资源」主页（`cad-resources.js`、`cad-resources-data.js`），插件的列表若有则仍在页面里但被隐藏；插件没有渲染列表时，资源主页直接显示在 `#main-outlet` 里（列表之后出现会移到它前面），`/viewer` 不再依赖插件列表才能显示：
 

@@ -45,7 +45,7 @@ export function readCooked(cooked) {
   doc.querySelectorAll("a[href]").forEach((link) => {
     const href = safeHref(link.getAttribute("href"));
     const name = (link.textContent || "").trim();
-    if (!href || seen.has(href) || name.startsWith("moaclab-cad-source:")) { return; }
+    if (!href || seen.has(href) || name.startsWith("moaclab-cad-source:") || name.startsWith("moaclab-cad-private:")) { return; }
     if (link.classList.contains("attachment") || CAD_EXT.test(new URL(href).pathname) || CAD_EXT.test(name)) {
       seen.add(href);
       files.push({ name: name || decodeURIComponent(href.split("/").pop()), href });
