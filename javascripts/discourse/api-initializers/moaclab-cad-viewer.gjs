@@ -13,6 +13,7 @@ import installResourcePage from "../lib/cad-resources";
 
 export default apiInitializer((api) => {
   const NS = "moaclab-cad-viewer";
+  const PRIVATE_SOURCE_PREFIX = "moaclab-cad-private:";
   const ASSET_BASE = "/plugins/discourse-moaclab-tools/viewer/v055";
   const themeSettings = typeof settings !== "undefined" ? settings : {};
   const EMBED_RE = /\[moaclab-3d\s+([^\]]+)\]/g;
@@ -195,7 +196,36 @@ export default apiInitializer((api) => {
       node.parentNode?.replaceChild(fragment, node);
     });
     hideRetentionLinks(root);
+    renderPrivateSourceLinks(root);
     if (root.dataset) root.dataset.moaclabCadEmbedsReady = "1";
+  }
+
+  // [moaclab-cad-private:<name>](/moaclab-cad/sources/<id>) marks a source file
+  // kept privately by the plugin. The server answers 403 to anyone outside the
+  // download groups; the link is only shown to people it would work for.
+  function renderPrivateSourceLinks(root) {
+    const canDownload = Boolean(api.getCurrentUser()?.can_download_moaclab_cad_sources);
+    root.querySelectorAll?.("a").forEach((link) => {
+      const text = (link.textContent || "").trim();
+      if (!text.startsWith(PRIVATE_SOURCE_PREFIX)) return;
+      const name = text.slice(PRIVATE_SOURCE_PREFIX.length).trim();
+      if (canDownload && /^\/moaclab-cad\/sources\/[a-f0-9]{32}$/.test(link.getAttribute("href") || "")) {
+        link.textContent = `${t("downloadSource", "Download source file")}: ${name}`;
+        link.title = t("privateSourceOnly", "Only visible to people allowed to download source files");
+        link.setAttribute("download", name);
+        link.classList.add(`${NS}-private-source`);
+        return;
+      }
+      link.classList.add(`${NS}-source-retainer`);
+      link.setAttribute("aria-hidden", "true");
+      const paragraph = link.closest("p");
+      if (paragraph && (paragraph.textContent || "").trim() === text) {
+        paragraph.hidden = true;
+        paragraph.classList.add(`${NS}-source-retainer-wrap`);
+      } else {
+        link.hidden = true;
+      }
+    });
   }
 
   function hideRetentionLinks(root) {
@@ -333,6 +363,28 @@ export default apiInitializer((api) => {
     if (!locator) return "";
     const title = (file?.name || upload?.original_filename || upload?.filename || "Moaclab CAD source").replace(/[\]\[\n\r]/g, " ").trim();
     return `[moaclab-cad-source:${title}](${locator})`;
+  }
+
+  function privateSourceMarkdown(source) {
+    const name = String(source?.name || "source").replace(/[\]\[\n\r]/g, " ").trim();
+    return `[${PRIVATE_SOURCE_PREFIX}${name}](/moaclab-cad/sources/${source.id})`;
+  }
+
+  // Needs discourse-moaclab-tools 1.7.0. The plugin checks login, type and
+  // size again; the front end only uploads.
+  async function uploadPrivateSource(file) {
+    const form = new FormData();
+    form.append("source", file, file.name);
+    form.append("name", file.name);
+    const response = await fetch("/moaclab-cad/sources.json", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: csrfToken() ? { "X-CSRF-Token": csrfToken() } : undefined,
+      body: form,
+    });
+    const json = await readUploadResponse(response);
+    if (!json?.ok || !/^[a-f0-9]{32}$/.test(json?.id || "")) throw new Error(json?.error || "source upload failed");
+    return json;
   }
 
   function csrfToken() {
@@ -530,6 +582,11 @@ export default apiInitializer((api) => {
         if (drawing2d) throw previewError; // the picture is all a 2D share has
         console.warn("Moaclab CAD Viewer preview capture failed; continuing with the 3D view only", previewError);
       }
+      if (state.keepSourceInput?.checked && !state.keepSourceInput.closest("label")?.hidden) {
+        setShareButtonState(t("uploadingSource", "Saving source…"), true);
+        const source = await uploadPrivateSource(state.currentFile);
+        body = `${body}\n\n${privateSourceMarkdown(source)}`;
+      }
       await openComposerWithShortcode(body, state.currentFile);
       setShareButtonState(t("shareUpload", "Upload & share"), false);
     } catch (error) {
@@ -554,17 +611,37 @@ export default apiInitializer((api) => {
     headerFile.appendChild(button);
     state.shareButton = button;
 
+    let keepLabel = null;
+    if (themeSettings.private_source_upload ?? false) {
+      keepLabel = document.createElement("label");
+      keepLabel.className = "mlcv-keep-source";
+      keepLabel.hidden = true;
+      keepLabel.title = t("privateSourceHint", "The original file is stored on the server. Only administrators can download it; everyone else sees the shared mesh.");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      const text = document.createElement("span");
+      text.textContent = t("privateSource", "Also keep the source privately");
+      keepLabel.append(input, text);
+      headerFile.appendChild(keepLabel);
+      state.keepSourceInput = input;
+    }
+
     state.bridge = {
       setFile(file, remote) {
         state.currentFile = remote ? null : file;
         state.currentFileKey = remote ? "" : `${file.name}:${file.size}:${file.lastModified}`;
         button.hidden = remote;
+        if (keepLabel) {
+          keepLabel.hidden = remote || !/^(step|stp|igs|iges|dxf|dwg)$/.test(fileExt(file?.name || ""));
+          state.keepSourceInput.checked = false;
+        }
         setShareButtonState(t("shareUpload", "Upload & share"), false);
       },
       clearFile() {
         state.currentFile = null;
         state.currentFileKey = "";
         button.hidden = true;
+        if (keepLabel) keepLabel.hidden = true;
       },
     };
   }

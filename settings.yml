@@ -15,3 +15,7 @@ resources_page:
   default: true
   type: bool
   description: "Show /viewer as an Instagram-style profile of the library category: header with counts and contributors, Publish and Preview buttons, All / Shared / Downloads / Other tabs, and a 4-column grid with like, reply and view counts. Needs library_category_id. Off: the plugin's drawing list."
+private_source_upload:
+  default: false
+  type: bool
+  description: "Next to Upload & share, offer “Also keep the source privately”: the original STEP / IGES / DXF / DWG is stored by discourse-moaclab-tools (1.7.0 or newer) outside public uploads, and only members of the plugin setting moaclab_cad_source_download_groups (default admins) see a download link in the post. Off: the source never leaves the author's computer."
